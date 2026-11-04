@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>モノに生まれたら｜身の回りのモノの一生を見届けるゲーム</title>
+<meta name="description" content="あなたは1円玉かもしれないし、ペットボトルかもしれない。統計データにもとづいて、身の回りのモノとして生まれ、その一生を見届けるゲーム。">
+<meta property="og:title" content="モノに生まれたら">
+<meta property="og:description" content="1円玉に生まれたら？ ペットボトルに生まれたら？ 統計にもとづいて、モノの一生を見届けよう。">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --bg:#fbf7f0;
+    --ink:#2f2a26;
+    --sub:#7b726a;
+    --card:#ffffff;
+    --line:#ebe3d8;
+    --accent:#ff8a5b;
+    --accent-dark:#d9663a;
+    --mint:#3fb39a;
+    --tile:#f4eee6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+    line-height:1.65;-webkit-tap-highlight-color:transparent;overflow-x:hidden;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom))}
+  h1{font-size:1.7rem;text-align:center;letter-spacing:.04em}
+  h1 small{display:block;font-size:.82rem;color:var(--sub);font-weight:normal}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:16px;margin-top:14px}
+  .card h2{font-size:1.05rem;margin-bottom:6px}
+  .card p,.card li{font-size:.92rem;color:var(--sub)}
+  .card ul{padding-left:1.2em}
+  button{font:inherit;cursor:pointer;border:none;border-radius:14px;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  .btn-main{display:block;width:100%;padding:15px;font-size:1.15rem;font-weight:bold;color:#fff;background:var(--accent);box-shadow:0 4px 0 var(--accent-dark);margin-top:12px}
+  .btn-main:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-dark)}
+  .btn-sub{display:block;width:100%;padding:12px;font-size:1rem;color:var(--ink);background:var(--tile);margin-top:10px}
+  .pick-row{display:flex;gap:8px;margin-top:10px}
+  .pick-row button{flex:1;padding:10px 6px;font-size:.88rem;background:var(--tile);color:var(--ink)}
+  [hidden]{display:none !important}
+
+  /* 誕生 */
+  .birth{text-align:center}
+  .birth .you{font-size:.95rem;color:var(--sub)}
+  .birth .name{font-size:2rem;font-weight:bold;margin-top:2px}
+  .birth .odds{font-size:2.4rem;font-weight:bold;color:var(--accent);line-height:1.2;margin-top:8px}
+  .birth .odds small{font-size:1rem;color:var(--ink)}
+  .birth .odds-text{font-size:.88rem;color:var(--sub);margin-top:6px}
+
+  /* ライフ画面 */
+  .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .head .age{font-size:2rem;font-weight:bold;line-height:1}
+  .head .meta{font-size:.85rem;color:var(--sub)}
+  .controls{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .controls button{padding:8px 12px;font-size:.9rem;background:var(--tile);color:var(--ink);border-radius:999px}
+  .controls button.on{background:var(--ink);color:#fff}
+  .scene-card{margin-top:12px;border-radius:22px;overflow:hidden;border:2px solid var(--line);background:#fff}
+  .scene-card svg{display:block;width:100%;height:auto}
+  .caption{padding:10px 14px;font-size:.95rem;font-weight:bold;border-top:2px solid var(--line)}
+  .hero-bob{animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  .stats{display:flex;gap:8px;margin-top:10px}
+  .stats div{flex:1;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 8px}
+  .stats span{display:block;font-size:.72rem;color:var(--sub)}
+  .stats b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+
+  .choice{
+    margin-top:12px;padding:14px;border-radius:18px;background:#fff4ec;border:2px solid var(--accent);
+    animation:pop .35s;
+  }
+  .choice p{font-weight:bold;font-size:1rem}
+  .choice button{display:block;width:100%;margin-top:8px;padding:12px;font-size:1rem;background:#fff;border:2px solid var(--accent);color:var(--ink)}
+  .choice button:active{background:#ffe4d6}
+  @keyframes pop{0%{transform:scale(.95);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  .log{margin-top:12px}
+  .log h2{font-size:1.05rem;margin-bottom:4px}
+  .entry{display:flex;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);animation:pop .3s}
+  .entry .when{flex:0 0 4.4em;font-size:.78rem;color:var(--sub);padding-top:2px}
+  .entry .what{flex:1;font-size:.95rem}
+  .entry.big .what{font-weight:bold}
+  .entry.mine .what{color:var(--accent-dark)}
+  .fact{display:inline-block;margin-top:3px;font-size:.7rem;color:#2c7a68;background:#e3f5f0;border-radius:999px;padding:0 8px}
+
+  /* 結末 */
+  .end-title{text-align:center;font-size:1.5rem;font-weight:bold;margin-top:4px}
+  .end-line{text-align:center;font-size:1rem;margin-top:6px}
+  .end-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .end-grid div{background:var(--tile);border-radius:12px;padding:8px 10px}
+  .end-grid span{display:block;font-size:.72rem;color:var(--sub)}
+  .end-grid b{font-size:1.05rem}
+  footer{text-align:center;font-size:.76rem;color:var(--sub);margin-top:24px}
+  footer a{color:var(--sub)}
+  .sources{font-size:.76rem;color:var(--sub);margin-top:6px;padding-left:1.2em}
+  .sources a{color:var(--sub);word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- タイトル -->
+  <section id="title">
+    <h1>モノに生まれたら<small>身の回りのモノの一生を、統計にもとづいて見届ける</small></h1>
+    <div class="scene-card" style="margin-top:14px"><svg id="titleSvg" viewBox="0 0 360 200"></svg></div>
+    <div class="card">
+      <h2>あそびかた</h2>
+      <ul>
+        <li>ボタンを押すと、あなたは<b>身の回りのモノ</b>として生まれます。</li>
+        <li>生まれる確率、行き先、最期は、国や業界団体の<b>統計データ</b>にもとづいて決まります（📊のついた出来事が、データにもとづく部分です）。</li>
+        <li>ときどき「どうしたい？」と聞かれます。選んだ願いで、行き先が変わりやすくなります。</li>
+      </ul>
+      <button class="btn-main" id="startBtn">生まれる</button>
+      <p style="margin-top:10px;font-size:.8rem;text-align:center">試作版：いまは「1円玉」と「ペットボトル」の2種類です</p>
+      <div class="pick-row">
+        <button data-pick="coin">1円玉で生まれる</button>
+        <button data-pick="bottle">ペットボトルで生まれる</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 誕生 -->
+  <section id="birth" hidden>
+    <div class="scene-card"><svg id="birthSvg" viewBox="0 0 360 200"></svg></div>
+    <div class="card birth">
+      <div class="you">あなたは</div>
+      <div class="name" id="birthName"></div>
+      <div class="you">として生まれました</div>
+      <div class="odds" id="birthOdds"></div>
+      <div class="odds-text" id="birthOddsText"></div>
+      <button class="btn-main" id="liveBtn">一生を見届ける</button>
+    </div>
+  </section>
+
+  <!-- 一生 -->
+  <section id="life" hidden>
+    <div class="head"><span class="age" id="ageText"></span><span class="meta" id="metaText"></span></div>
+    <div class="controls" id="controls">
+      <button data-speed="0">⏸</button>
+      <button data-speed="1" class="on">1×</button>
+      <button data-speed="2">2×</button>
+      <button data-speed="4">4×</button>
+      <button id="nextBtn">次へ ›</button>
+    </div>
+    <div class="scene-card">
+      <svg id="sceneSvg" viewBox="0 0 360 200"></svg>
+      <div class="caption" id="caption"></div>
+    </div>
+    <div class="stats">
+      <div><span id="condLabel">状態</span><b id="condText">100</b></div>
+      <div><span>持ち主</span><b id="ownerText">0人</b></div>
+      <div><span>旅した距離</span><b id="kmText">0km</b></div>
+    </div>
+    <div class="choice" id="choiceBox" hidden>
+      <p id="choiceQ"></p>
+      <div id="choiceBtns"></div>
+    </div>
+    <div class="card" id="endCard" hidden>
+      <div class="end-title" id="endTitle"></div>
+      <div class="end-line" id="endLine"></div>
+      <div class="end-grid" id="endGrid"></div>
+      <button class="btn-main" id="shareBtn">Xでシェアする</button>
+      <button class="btn-sub" id="copyBtn">結果をコピーする</button>
+      <button class="btn-sub" id="againBtn">もう一度生まれる</button>
+    </div>
+    <div class="card log">
+      <h2>一生の記録 <span style="font-size:.75rem;color:var(--sub);font-weight:normal">新しい順</span></h2>
+      <div id="logBox"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div>出典（数字の元データ）</div>
+    <ul class="sources">
+      <li>財務省「貨幣の種類と表示」「貨幣製造計画」 <a href="https://www.mof.go.jp/policy/currency/coin/general_coin/list.htm">mof.go.jp</a></li>
+      <li>財務省「通貨に関する実態調査」（2026年） <a href="https://www.mof.go.jp/about_mof/mof_budget/release/itaku/seikabutsu/20260630tsuuka01.pdf">mof.go.jp</a></li>
+      <li>1円玉の流通枚数（日本銀行「通貨流通高」をもとにした野村證券の解説） <a href="https://www.nomura.co.jp/fic/fin-wings/column/cash-trivia/">nomura.co.jp</a></li>
+      <li>PETボトルリサイクル推進協議会（販売本数・回収率・再生の用途・輸出先） <a href="https://www.petbottle-rec.gr.jp/data/calculate.html">petbottle-rec.gr.jp</a></li>
+      <li>PETボトル用樹脂の用途別需要 <a href="https://www.petbottle-rec.gr.jp/data/demand_trend.html">petbottle-rec.gr.jp</a></li>
+      <li>環境省「漂着ごみ対策総合検討業務」 <a href="https://www.env.go.jp/content/900543449.pdf">env.go.jp</a></li>
+      <li>日本自動販売システム機械工業会の自販機台数（報道より）</li>
+    </ul>
+    <div style="margin-top:8px">📊のない出来事は、統計をもとにした「演出」です。</div>
+    <div style="margin-top:8px"><a href="../">ほかのゲームを見る</a></div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ============================================================
+  //  小さな道具
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const rint = (a, b) => Math.floor(rand(a, b + 1));
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const val = (v, c) => (typeof v === "function" ? v(c) : v);
+  function wpick(items) {
+    // items: [{w, ...}]
+    const total = items.reduce((s, it) => s + it.w, 0);
+    let r = Math.random() * total;
+    for (const it of items) { r -= it.w; if (r <= 0) return it; }
+    return items[items.length - 1];
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+
+  const PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+
+  // 文章の中の {名前} を置きかえる。毎回ランダムに選ぶものと、一生のあいだ固定のものがある
+  const RANDOM_WORDS = {
+    shop: ["コンビニ", "スーパー", "八百屋さん", "駄菓子屋さん", "100円ショップ", "ドラッグストア", "駅の売店", "パン屋さん", "本屋さん", "商店街のお肉屋さん"],
+    wish: ["合格しますように", "家族が元気でいますように", "宝くじが当たりますように", "推しに会えますように", "背がのびますように", "テストで100点がとれますように", "猫が長生きしますように", "彼女ができますように"],
+    cause: ["災害にあった地域を助ける", "盲導犬を育てる", "保護された動物を助ける", "海外の子どもに給食を届ける"],
+    outing: ["遊園地", "海", "山の頂上", "野球場", "図書館", "学校の運動会", "夏祭り", "動物園"],
+    beach: ["対馬", "石垣島", "九十九里浜", "能登の海岸", "沖縄本島の浜", "五島列島"],
+    pref2: PREFS
+  };
+  function fill(text, c) {
+    return String(val(text, c)).replace(/\{(\w+)\}/g, (m, k) => {
+      if (c.v[k] !== undefined) return c.v[k];
+      if (RANDOM_WORDS[k]) return pick(RANDOM_WORDS[k]);
+      return m;
+    });
+  }
+  function fmtKm(km) { return km >= 10000 ? (km / 10000).toFixed(1) + "万km" : Math.round(km).toLocaleString() + "km"; }
+
+  // ============================================================
+  //  イラスト（モノ目線・フラットなパステル）
+  // ============================================================
+  function face(mood) {
+    const s = 'stroke="#3a2f2a" stroke-width="2.6" stroke-linecap="round" fill="none"';
+    const cheeks = '<circle cx="-13" cy="6" r="3.6" fill="#ff9e9e" opacity=".55"/><circle cx="13" cy="6" r="3.6" fill="#ff9e9e" opacity=".55"/>';
+    switch (mood) {
+      case "happy":
+        return `<path d="M-11 -2 q3 -5 6 0 M5 -2 q3 -5 6 0" ${s}/><path d="M-6 6 q6 7 12 0" ${s}/>${cheeks}`;
+      case "sad":
+        return `<circle cx="-8" cy="-2" r="2.4" fill="#3a2f2a"/><circle cx="8" cy="-2" r="2.4" fill="#3a2f2a"/><path d="M-6 10 q6 -6 12 0" ${s}/><path d="M11 3 q2 4 0 6 q-2 -2 0 -6z" fill="#6bb4ff"/>`;
+      case "surprise":
+        return `<circle cx="-8" cy="-3" r="3.4" fill="#3a2f2a"/><circle cx="8" cy="-3" r="3.4" fill="#3a2f2a"/><ellipse cx="0" cy="8" rx="4" ry="5" fill="#3a2f2a"/>`;
+      case "sleep":
+        return `<path d="M-11 -2 h6 M5 -2 h6" ${s}/><path d="M-3 7 h6" ${s}/><text x="16" y="-12" font-size="11" fill="#7b726a" font-weight="bold">z</text><text x="24" y="-20" font-size="8" fill="#7b726a" font-weight="bold">z</text>`;
+      default:
+        return `<circle cx="-8" cy="-2" r="2.4" fill="#3a2f2a"/><circle cx="8" cy="-2" r="2.4" fill="#3a2f2a"/><path d="M-4 7 h8" ${s}/>`;
+    }
+  }
+
+  function coinHero(c, mood) {
+    // ピカピカ度が下がるほど、くすんだ色になる
+    const k = Math.max(0, Math.min(1, (c.cond || 100) / 100));
+    const mix = (a, b) => Math.round(b + (a - b) * k);
+    const col = `rgb(${mix(234, 176)},${mix(238, 170)},${mix(243, 160)})`;
+    return `<circle r="30" fill="${col}" stroke="#9aa4ae" stroke-width="3"/>
+      <circle r="24" fill="none" stroke="#c7ced6" stroke-width="2"/>
+      <path d="M0 -21 q-5 3 -3 7 q4 -1 3 -7z M0 -21 q5 3 3 7 q-4 -1 -3 -7z" fill="#b8c1ca"/>
+      <g transform="translate(0,4)">${face(mood)}</g>`;
+  }
+
+  const BOTTLE_COLORS = {
+    "お茶": "#7bbf6a", "水": "#8ecbf0", "炭酸飲料": "#e86a6a", "スポーツドリンク": "#4a8fe0",
+    "コーヒー": "#9a6a48", "ジュース": "#f5a623", "しょうゆ": "#6b3a26", "シャンプー": "#c98fd6",
+    "化粧水": "#f2a6c0", "お酒": "#c9b458"
+  };
+  function bottleHero(c, mood) {
+    const color = BOTTLE_COLORS[c.v.content] || "#8ecbf0";
+    const f = Math.max(0, Math.min(1, c.fill));
+    const h = 84 * f;
+    return `<rect x="-9" y="-62" width="18" height="10" rx="3" fill="${color}"/>
+      <path d="M-8 -52 h16 l6 10 h-28z" fill="#e8f5fd" stroke="#8fb3cc" stroke-width="2.5" stroke-linejoin="round"/>
+      <rect x="-22" y="-44" width="44" height="96" rx="15" fill="#e8f5fd" stroke="#8fb3cc" stroke-width="2.5"/>
+      ${h > 1 ? `<rect x="-19" y="${(49 - h).toFixed(1)}" width="38" height="${h.toFixed(1)}" rx="11" fill="${color}" opacity=".45"/>` : ""}
+      <rect x="-22" y="-10" width="44" height="30" fill="#ffffff" stroke="#8fb3cc" stroke-width="2"/>
+      <rect x="-22" y="-10" width="44" height="5" fill="${color}"/>
+      <rect x="-22" y="15" width="44" height="5" fill="${color}"/>
+      <path d="M-14 -38 v20" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+      <g transform="translate(0,6) scale(.72)">${face(mood)}</g>`;
+  }
+
+  const sparkle = (x, y, s = 1) => `<path transform="translate(${x},${y}) scale(${s})" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2Z" fill="#ffd75e"/>`;
+  const cloud = (x, y, s = 1) => `<g transform="translate(${x},${y}) scale(${s})" fill="#ffffff"><ellipse cx="0" cy="0" rx="22" ry="12"/><ellipse cx="18" cy="-6" rx="16" ry="12"/><ellipse cx="34" cy="2" rx="16" ry="10"/></g>`;
+  const miniBottle = (x, y, col, s = 1) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-4" y="-26" width="8" height="5" rx="1.5" fill="${col}"/><rect x="-9" y="-21" width="18" height="40" rx="6" fill="#e8f5fd" stroke="#9fbfd4" stroke-width="1.5"/><rect x="-9" y="-6" width="18" height="12" fill="${col}" opacity=".8"/></g>`;
+  const otherCoin = (x, y, r, fillc, stroke, hole) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fillc}" stroke="${stroke}" stroke-width="2.5"/>${hole ? `<circle cx="${x}" cy="${y}" r="${r * 0.28}" fill="none" stroke="${stroke}" stroke-width="2"/>` : ""}`;
+
+  const SCENES = {
+    // ---- 1円玉 ----
+    mint: () => ({ x: 180, y: 110, s: .85, bg: `
+      <rect width="360" height="200" fill="#dcecf7"/>
+      <rect y="152" width="360" height="48" fill="#bccbd8"/>
+      <rect x="138" y="0" width="84" height="60" rx="10" fill="#9fb0bf"/>
+      <rect x="166" y="60" width="28" height="18" fill="#7d8f9f"/>
+      <rect x="18" y="140" width="324" height="14" rx="7" fill="#6f8191"/>
+      ${[40, 85, 130, 230, 275, 320].map((x) => `<circle cx="${x}" cy="147" r="4.5" fill="#4f5f6d"/>`).join("")}
+      ${[55, 100, 260, 305].map((x) => otherCoin(x, 127, 12, "#e4e8ed", "#9fa9b4")).join("")}
+      ${sparkle(118, 44)}${sparkle(250, 30, .8)}${sparkle(292, 78, .7)}` }),
+    bank: () => ({ x: 180, y: 102, s: .8, bg: `
+      <rect width="360" height="200" fill="#f6ecdc"/>
+      <rect x="26" y="18" width="124" height="82" rx="8" fill="#cfe6f5" stroke="#b49a7a" stroke-width="4"/>
+      <line x1="88" y1="18" x2="88" y2="100" stroke="#b49a7a" stroke-width="4"/>
+      <rect x="208" y="22" width="126" height="34" rx="10" fill="#2f5d8c"/>
+      <text x="271" y="45" font-size="16" fill="#fff" text-anchor="middle" font-weight="bold">ぎんこう</text>
+      ${[0, 1, 2].map((i) => `<rect x="${236 + i * 22}" y="${84}" width="16" height="44" rx="4" fill="#f4dfa8" stroke="#c9a85d" stroke-width="2"/>`).join("")}
+      <rect y="128" width="360" height="72" fill="#c99a6b"/><rect y="122" width="360" height="10" fill="#b5875a"/>
+      <ellipse cx="180" cy="132" rx="72" ry="12" fill="#3f7fc4"/>` }),
+    register: () => ({ x: 180, y: 128, s: .7, bg: `
+      <rect width="360" height="200" fill="#fde8e4"/>
+      <rect x="214" y="0" width="44" height="30" fill="#fff"/><line x1="222" y1="10" x2="250" y2="10" stroke="#ddd" stroke-width="2"/><line x1="222" y1="18" x2="244" y2="18" stroke="#ddd" stroke-width="2"/>
+      <rect x="66" y="26" width="228" height="60" rx="12" fill="#7fcfc3"/>
+      <rect x="96" y="38" width="120" height="30" rx="5" fill="#2d4a47"/>
+      <text x="206" y="60" font-size="18" fill="#9ff5d9" text-anchor="end" font-family="monospace" font-weight="bold">¥1</text>
+      <circle cx="248" cy="46" r="7" fill="#fff" opacity=".8"/><circle cx="270" cy="46" r="7" fill="#fff" opacity=".8"/><circle cx="248" cy="66" r="7" fill="#fff" opacity=".8"/><circle cx="270" cy="66" r="7" fill="#fff" opacity=".8"/>
+      <rect x="40" y="92" width="280" height="84" rx="10" fill="#eef9f6" stroke="#7fcfc3" stroke-width="4"/>
+      ${[110, 180, 250].map((x) => `<line x1="${x - 35}" y1="96" x2="${x - 35}" y2="172" stroke="#b9e3da" stroke-width="3"/>`).join("")}
+      ${otherCoin(110, 140, 18, "#c98250", "#9c5f37")}${otherCoin(250, 138, 20, "#e4e7ea", "#9fa9b4")}${otherCoin(290, 146, 17, "#e3b94f", "#b88f2e", true)}
+      <rect y="176" width="360" height="24" fill="#e7c6b8"/>` }),
+    wallet: () => ({ x: 182, y: 138, s: .8, bg: `
+      <rect width="360" height="200" fill="#5a3b2a"/>
+      <rect x="20" y="6" width="96" height="54" rx="6" fill="#f2c94c" transform="rotate(-6 68 33)"/>
+      <rect x="108" y="2" width="96" height="54" rx="6" fill="#7fb7e6" transform="rotate(3 156 29)"/>
+      <rect x="250" y="-4" width="60" height="96" fill="#fffdf6" transform="rotate(8 280 44)"/>
+      ${[20, 34, 48, 62].map((y) => `<line x1="258" y1="${y}" x2="298" y2="${y + 5}" stroke="#d8d2c4" stroke-width="2"/>`).join("")}
+      <path d="M0 70 Q180 46 360 70 L360 200 L0 200Z" fill="#7b5139"/>
+      <path d="M10 78 Q180 56 350 78" stroke="#a87855" stroke-width="2" stroke-dasharray="6 5" fill="none"/>
+      ${otherCoin(86, 150, 26, "#c98250", "#9c5f37")}${otherCoin(282, 146, 29, "#e4e7ea", "#9fa9b4")}${otherCoin(320, 98, 20, "#e3b94f", "#b88f2e", true)}` }),
+    piggy: () => ({ x: 180, y: 126, s: .8, bg: `
+      <rect width="360" height="200" fill="#fff3d9"/>
+      <rect x="88" y="20" width="184" height="176" rx="32" fill="#e3f3fc" stroke="#9cc7de" stroke-width="5"/>
+      <rect x="108" y="6" width="144" height="20" rx="7" fill="#e8a35a"/>
+      ${[[118, 176, "#c98250"], [146, 182, "#e4e8ed"], [174, 180, "#e3b94f"], [204, 182, "#e4e8ed"], [232, 176, "#c98250"], [130, 160, "#e4e8ed"], [242, 160, "#e3b94f"], [110, 150, "#e4e8ed"], [252, 140, "#e4e8ed"]].map(([x, y, col]) => otherCoin(x, y, 14, col, "#9fa9b4", col === "#e3b94f")).join("")}
+      <path d="M104 40 v120" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".7"/>` }),
+    street: () => ({ x: 140, y: 152, s: .7, bg: `
+      <rect width="360" height="200" fill="#cfe8ff"/>
+      ${cloud(40, 30)}${cloud(220, 22, .8)}
+      <rect x="0" y="60" width="60" height="50" fill="#f3d9c6"/><rect x="66" y="44" width="50" height="66" fill="#d7e3c8"/><rect x="290" y="50" width="70" height="60" fill="#e7d3ee"/>
+      <rect y="104" width="360" height="96" fill="#8d9196"/>
+      ${[20, 90, 160, 230, 300].map((x) => `<rect x="${x}" y="176" width="40" height="6" rx="3" fill="#f2f2f2"/>`).join("")}
+      <path d="M236 104 h124 v54 q-30 18 -124 6z" fill="#3a3a3f"/>
+      ${[250, 274, 298, 322].map((x) => `<line x1="${x}" y1="118" x2="${x}" y2="150" stroke="#55555c" stroke-width="5"/>`).join("")}
+      <path d="M60 140 q12 -14 24 0 q-12 10 -24 0z" fill="#e8a35a"/>` }),
+    vend_under: () => ({ x: 206, y: 164, s: .7, bg: `
+      <rect width="360" height="200" fill="#0f1014"/>
+      <rect width="360" height="72" fill="#e2574c"/>
+      ${[30, 70, 110, 150, 190, 230, 270, 310].map((x) => `<rect x="${x}" y="40" width="24" height="6" rx="3" fill="#b23b33"/>`).join("")}
+      <rect y="64" width="360" height="12" fill="#a8342c"/>
+      <path d="M0 200 L0 132 L110 200Z" fill="#23252c"/>
+      <rect y="190" width="360" height="10" fill="#1f2026"/>
+      ${[[60, 184, 9], [300, 186, 12], [270, 180, 7], [120, 188, 6]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#4a4c55"/>`).join("")}
+      ${otherCoin(98, 172, 18, "#9c6440", "#6e4429")}
+      <g transform="translate(98,174) scale(.5)">${face("neutral")}</g>
+      <ellipse cx="206" cy="190" rx="34" ry="5" fill="#000" opacity=".5"/>` }),
+    shrine: () => ({ x: 180, y: 76, s: .7, bg: `
+      <rect width="360" height="200" fill="#f7efe1"/>
+      <rect x="40" y="30" width="12" height="130" fill="#d9534f"/><rect x="308" y="30" width="12" height="130" fill="#d9534f"/>
+      <rect x="20" y="22" width="320" height="12" rx="4" fill="#c0392b"/><rect x="36" y="46" width="288" height="8" fill="#d9534f"/>
+      <rect y="160" width="360" height="40" fill="#d9c7a6"/>
+      <path d="M180 0 v40" stroke="#c9a26b" stroke-width="5"/><circle cx="180" cy="44" r="9" fill="#e3b94f"/>
+      <rect x="104" y="102" width="152" height="18" fill="#7d4f22"/>
+      <rect x="110" y="118" width="140" height="62" fill="#a7713c"/>
+      ${[0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${112 + i * 20}" y="104" width="12" height="14" fill="#5e3a16"/>`).join("")}
+      <rect x="110" y="134" width="140" height="6" fill="#8b5a2b"/>` }),
+    donation: () => ({ x: 180, y: 128, s: .6, bg: `
+      <rect width="360" height="200" fill="#e6f5ec"/>
+      <rect y="158" width="360" height="42" fill="#cdb38f"/>
+      <rect x="116" y="58" width="128" height="102" rx="8" fill="#ffffff" opacity=".7" stroke="#8fbfa3" stroke-width="4"/>
+      <rect x="160" y="52" width="40" height="8" rx="3" fill="#3a2f2a"/>
+      <path d="M166 92 q14 -16 28 0 q-14 18 -28 0z" fill="#ff7b7b" opacity=".8"/>
+      ${otherCoin(140, 148, 11, "#c98250", "#9c5f37")}${otherCoin(222, 150, 12, "#e4e8ed", "#9fa9b4")}` }),
+    drawer: (c) => ({ x: 180, y: 118, s: .75, bg: `
+      <rect width="360" height="200" fill="#e5d1b4"/>
+      <path d="M0 0 L50 40 L310 40 L360 0z" fill="#d4bc98"/><path d="M0 200 L50 160 L310 160 L360 200z" fill="#c9ae86"/>
+      <rect x="50" y="40" width="260" height="120" fill="#efe0c8"/>
+      <ellipse cx="180" cy="140" rx="70" ry="16" fill="#ffffff" stroke="#d2c2ab" stroke-width="3"/>
+      <circle cx="90" cy="120" r="16" fill="none" stroke="#e8a35a" stroke-width="4"/>
+      <path d="M262 110 h26 a6 6 0 0 1 0 12 h-22 a4 4 0 0 1 0 -8 h18" stroke="#9aa4ae" stroke-width="3" fill="none"/>
+      <rect x="230" y="64" width="70" height="8" rx="4" fill="#f2c94c" transform="rotate(-12 265 68)"/>
+      ${c && c.flags.dark ? '<rect width="360" height="200" fill="#1a1622" opacity=".55"/>' : ""}` }),
+    furnace: () => ({ x: 180, y: 112, s: .8, bg: `
+      <rect width="360" height="200" fill="#2b1a13"/>
+      <circle cx="180" cy="210" r="170" fill="#ff7a2f" opacity=".35"/>
+      <ellipse cx="180" cy="186" rx="160" ry="26" fill="#ffb347"/>
+      <ellipse cx="150" cy="182" rx="40" ry="6" fill="#ffe08a"/>
+      <path d="M40 150 q10 -30 20 0 M300 146 q10 -30 20 0" stroke="#ff9a4d" stroke-width="5" fill="none" stroke-linecap="round"/>` }),
+    collector: () => ({ x: 180, y: 104, s: .7, bg: `
+      <rect width="360" height="200" fill="#20335a"/>
+      <rect x="20" y="40" width="320" height="130" rx="16" fill="#2c4475"/>
+      <text x="180" y="30" font-size="13" fill="#e3c77a" text-anchor="middle" font-weight="bold">貨幣セット</text>
+      ${otherCoin(50, 104, 22, "#e3c25a", "#b8952e")}${otherCoin(102, 104, 20, "#e4e7ea", "#9fa9b4")}${otherCoin(258, 104, 18, "#e4e7ea", "#9fa9b4", true)}${otherCoin(306, 104, 20, "#c98250", "#9c5f37")}
+      <rect x="20" y="40" width="320" height="40" rx="16" fill="#ffffff" opacity=".07"/>
+      ${sparkle(140, 60, .6)}${sparkle(224, 150, .6)}` }),
+    seafloor: () => ({ x: 180, y: 160, s: .6, bg: `
+      <rect width="360" height="200" fill="#1d4f7a"/><rect width="360" height="70" fill="#2f6d9e"/>
+      <rect y="168" width="360" height="32" fill="#c9b27c"/>
+      <path d="M60 168 q-10 -30 4 -60 q-14 30 -4 60z M80 168 q10 -40 -4 -80 q14 40 4 80z M300 168 q-10 -26 6 -52" stroke="#3fa26b" stroke-width="6" fill="none" stroke-linecap="round"/>
+      ${[[120, 60, 5], [130, 40, 3], [250, 90, 4], [258, 70, 2.5]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#a9d8f5" stroke-width="2"/>`).join("")}
+      <path d="M240 120 q16 -12 30 0 q-14 12 -30 0z M270 120 l8 -6 v12z" fill="#ffb45e"/>` }),
+
+    // ---- ペットボトル ----
+    bottle_factory: () => ({ x: 180, y: 96, s: .8, bg: `
+      <rect width="360" height="200" fill="#e4f2fb"/>
+      <rect y="150" width="360" height="50" fill="#c3d5e2"/>
+      <rect x="150" y="0" width="60" height="22" rx="6" fill="#9fb0bf"/><rect x="172" y="22" width="16" height="12" fill="#7d8f9f"/>
+      <rect x="14" y="146" width="332" height="12" rx="6" fill="#6f8191"/>
+      ${[40, 74, 108, 252, 286, 320].map((x) => `<rect x="${x - 7}" y="104" width="14" height="40" rx="7" fill="#d9cdf2" stroke="#a796d6" stroke-width="2"/><rect x="${x - 9}" y="100" width="18" height="6" rx="2" fill="#a796d6"/>`).join("")}
+      ${sparkle(120, 40, .7)}${sparkle(256, 60, .6)}` }),
+    truck: () => ({ x: 180, y: 96, s: .62, bg: `
+      <rect width="360" height="200" fill="#cfeaff"/>${cloud(30, 30, .8)}${cloud(260, 24, .7)}
+      <path d="M0 120 q60 -40 120 0 q60 -50 130 0 q60 -30 110 0 v20 h-360z" fill="#b6dca0"/>
+      <rect y="150" width="360" height="50" fill="#8d9196"/>
+      <rect x="70" y="112" width="220" height="66" rx="4" fill="#d6a66a"/>
+      <path d="M70 112 l-24 -16 h60 l10 16z M290 112 l24 -16 h-60 l-10 16z" fill="#c4914f"/>
+      ${miniBottle(110, 106, "#7bbf6a", .9)}${miniBottle(140, 104, "#e86a6a", .9)}${miniBottle(220, 104, "#8ecbf0", .9)}${miniBottle(250, 106, "#f5a623", .9)}
+      <rect x="70" y="112" width="220" height="66" rx="4" fill="#d6a66a"/>
+      <text x="180" y="152" font-size="14" fill="#8a5d2a" text-anchor="middle" font-weight="bold">こわれもの</text>` }),
+    shelf: () => ({ x: 180, y: 104, s: .7, bg: `
+      <rect width="360" height="200" fill="#dff1fb"/>
+      <rect x="10" y="6" width="340" height="188" rx="10" fill="#f6fbff" stroke="#c4ccd4" stroke-width="6"/>
+      <rect x="16" y="140" width="328" height="8" fill="#c4ccd4"/><rect x="16" y="64" width="328" height="6" fill="#c4ccd4"/>
+      ${[50, 80, 110, 250, 280, 310].map((x, i) => miniBottle(x, 118, ["#7bbf6a", "#7bbf6a", "#8ecbf0", "#e86a6a", "#4a8fe0", "#f5a623"][i], 1)).join("")}
+      ${[50, 90, 130, 170, 210, 250, 290].map((x, i) => miniBottle(x, 44, ["#f5a623", "#e86a6a", "#9a6a48", "#7bbf6a", "#8ecbf0", "#4a8fe0", "#7bbf6a"][i], .8)).join("")}
+      <rect x="150" y="146" width="60" height="16" rx="3" fill="#ffe15a"/><text x="180" y="158" font-size="11" text-anchor="middle" font-weight="bold">¥150</text>
+      <path d="M40 190 L120 10 h30 L70 190z" fill="#ffffff" opacity=".35"/>` }),
+    vending: () => ({ x: 180, y: 72, s: .45, bg: `
+      <rect width="360" height="200" fill="#24324d"/>
+      <circle cx="180" cy="100" r="150" fill="#5b7bb5" opacity=".25"/>
+      <rect x="62" y="8" width="236" height="200" rx="10" fill="#f4f6f9"/>
+      <rect x="80" y="20" width="200" height="104" rx="6" fill="#d7ecff"/>
+      ${[100, 136, 224, 260].map((x, i) => miniBottle(x, 58, ["#7bbf6a", "#e86a6a", "#4a8fe0", "#f5a623"][i], .75)).join("")}
+      ${[100, 136, 172, 208, 244, 260].slice(0, 5).map((x, i) => miniBottle(x + 6, 104, ["#8ecbf0", "#9a6a48", "#7bbf6a", "#e86a6a", "#4a8fe0"][i], .65)).join("")}
+      ${[96, 132, 224, 260].map((x) => `<rect x="${x - 8}" y="78" width="16" height="6" rx="3" fill="#3fb39a"/>`).join("")}
+      <rect x="236" y="134" width="40" height="20" rx="4" fill="#c8ced6"/><rect x="250" y="140" width="12" height="4" rx="2" fill="#3a3a3f"/>
+      <rect x="96" y="164" width="140" height="30" rx="6" fill="#2b2f36"/>` }),
+    super: (c) => ({ x: 180, y: 104, s: .7, bg: `
+      <rect width="360" height="200" fill="#fff4e6"/>
+      <rect y="140" width="360" height="12" fill="#c9915a"/><rect y="62" width="360" height="10" fill="#c9915a"/>
+      ${[40, 76, 112, 248, 284, 320].map((x) => miniBottle(x, 118, (c && BOTTLE_COLORS[c.v.content]) || "#6b3a26", 1)).join("")}
+      ${[30, 80, 130, 230, 280, 330].map((x, i) => `<rect x="${x - 18}" y="${26}" width="36" height="36" rx="4" fill="${["#ffd1a8", "#cfe8c4", "#ffe58f", "#f6c1d0", "#c9dcf5", "#ffd1a8"][i]}"/>`).join("")}
+      <rect y="152" width="360" height="48" fill="#ead7bd"/>` }),
+    hand: () => ({ x: 180, y: 88, s: .72, bg: `
+      <rect width="360" height="200" fill="#bfe3ff"/>${cloud(30, 40)}${cloud(250, 30, .9)}
+      <path d="M96 200 C96 150 100 132 120 128 L240 128 C262 130 268 150 268 200z" fill="#f6c9a8"/>
+      ${[118, 150, 182, 214].map((x) => `<rect x="${x}" y="104" width="26" height="44" rx="13" fill="#f6c9a8"/>`).join("")}
+      <path d="M248 160 q30 -36 46 -30 q6 10 -26 48z" fill="#f6c9a8"/>
+      <path d="M126 148 h110" stroke="#e8b08c" stroke-width="3" stroke-linecap="round"/>` }),
+    kitchen: () => ({ x: 180, y: 104, s: .7, bg: `
+      <rect width="360" height="200" fill="#fff0dc"/>
+      ${[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<line x1="${i * 45}" y1="0" x2="${i * 45}" y2="140" stroke="#f3dec2" stroke-width="2"/>`).join("")}
+      <rect y="140" width="360" height="60" fill="#e0b788"/><rect y="136" width="360" height="8" fill="#cfa06c"/>
+      <path d="M50 140 q0 -26 30 -26 q30 0 30 26z" fill="#ffffff" stroke="#d8c3a8" stroke-width="3"/>
+      <ellipse cx="80" cy="116" rx="22" ry="6" fill="#ffffff"/>
+      <path d="M240 112 l70 -16 M244 120 l70 -16" stroke="#b5835a" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="290" cy="138" rx="34" ry="8" fill="#ffffff" stroke="#d8c3a8" stroke-width="3"/>` }),
+    bath: () => ({ x: 180, y: 100, s: .7, bg: `
+      <rect width="360" height="200" fill="#e3f3f7"/>
+      ${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => `<line x1="${i * 40}" y1="0" x2="${i * 40}" y2="140" stroke="#cfe6ec" stroke-width="2"/><line x1="0" y1="${i * 40}" x2="360" y2="${i * 40}" stroke="#cfe6ec" stroke-width="2"/>`).join("")}
+      <rect y="138" width="360" height="62" fill="#ffffff"/><rect y="138" width="360" height="10" fill="#a8d8ea"/>
+      <circle cx="60" cy="120" r="14" fill="#ffffff" opacity=".8"/><circle cx="80" cy="110" r="9" fill="#ffffff" opacity=".8"/><circle cx="300" cy="118" r="12" fill="#ffffff" opacity=".8"/>` }),
+    bench: () => ({ x: 192, y: 110, s: .62, bg: `
+      <rect width="360" height="200" fill="#ffd9b8"/>
+      <circle cx="300" cy="50" r="22" fill="#ffb37a"/>
+      <circle cx="50" cy="80" r="40" fill="#8fcf8a"/><rect x="44" y="100" width="12" height="60" fill="#b5835a"/>
+      <rect y="150" width="360" height="50" fill="#a8d88f"/>
+      <rect x="90" y="136" width="200" height="12" rx="4" fill="#b5835a"/><rect x="90" y="118" width="200" height="10" rx="4" fill="#c99a6b"/>
+      <rect x="104" y="148" width="10" height="30" fill="#7d5a3c"/><rect x="266" y="148" width="10" height="30" fill="#7d5a3c"/>
+      <path d="M300 128 q10 -12 22 -4 l8 -4 l-4 8 q4 10 -8 12 q-14 2 -18 -12z" fill="#2b2b30"/><circle cx="318" cy="126" r="1.6" fill="#fff"/>` }),
+    bin: () => ({ x: 180, y: 58, s: .55, bg: `
+      <rect width="360" height="200" fill="#e7f3ea"/>
+      <rect y="176" width="360" height="24" fill="#c9d8c5"/>
+      <rect x="110" y="86" width="140" height="92" rx="10" fill="#3b7dd8"/>
+      <rect x="104" y="80" width="152" height="16" rx="6" fill="#2f66b3"/>
+      ${[140, 180, 220].map((x) => `<circle cx="${x}" cy="88" r="7" fill="#1d3f70"/>`).join("")}
+      <text x="180" y="138" font-size="15" fill="#fff" text-anchor="middle" font-weight="bold">ペットボトル</text>
+      <path d="M160 156 a12 12 0 1 1 24 0" stroke="#fff" stroke-width="3" fill="none"/><path d="M184 156 l-5 -4 m5 4 l4 -5" stroke="#fff" stroke-width="3"/>` }),
+    recycle_plant: () => ({ x: 104, y: 98, s: .62, bg: `
+      <rect width="360" height="200" fill="#eceff3"/>
+      <rect y="160" width="360" height="40" fill="#cfd5dc"/>
+      <rect x="190" y="40" width="140" height="110" rx="10" fill="#9aa6b2"/>
+      ${[0, 1, 2, 3, 4].map((i) => `<path d="M${200 + i * 26} 150 l13 -20 l13 20z" fill="#6f7c88"/>`).join("")}
+      <rect x="200" y="54" width="70" height="30" rx="5" fill="#d7ecff"/>
+      <rect x="10" y="150" width="190" height="12" rx="6" fill="#6f8191"/>
+      ${Array.from({ length: 18 }, (_, i) => `<rect x="${210 + (i * 37) % 120}" y="${165 + (i * 13) % 26}" width="7" height="5" fill="${["#8ecbf0", "#7bbf6a", "#ffffff", "#f5a623"][i % 4]}" transform="rotate(${i * 23} ${213 + (i * 37) % 120} ${167 + (i * 13) % 26})"/>`).join("")}` }),
+    sea: () => ({ x: 180, y: 120, s: .62, r: 70, bg: `
+      <rect width="360" height="200" fill="#bfe6ff"/><circle cx="300" cy="40" r="20" fill="#ffe08a"/>${cloud(40, 36, .8)}
+      <rect y="112" width="360" height="88" fill="#5ab4e0"/>
+      ${[130, 155, 180].map((y) => `<path d="M0 ${y} q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0" stroke="#8fd0f2" stroke-width="3" fill="none"/>`).join("")}
+      <path d="M90 70 q8 -8 16 0 q8 -8 16 0" stroke="#3a2f2a" stroke-width="2.5" fill="none"/>` }),
+    beach: () => ({ x: 186, y: 150, s: .55, r: 80, bg: `
+      <rect width="360" height="200" fill="#c9ebff"/>${cloud(250, 30, .8)}
+      <rect y="78" width="360" height="40" fill="#5ab4e0"/>
+      <path d="M0 116 q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 V200 H0z" fill="#f2dcae"/>
+      <g transform="translate(70,150) rotate(-70)">${miniBottle(0, 0, "#4a8fe0", 1)}</g>
+      <g transform="translate(296,160) rotate(60)">${miniBottle(0, 0, "#e86a6a", 1)}</g>
+      <path d="M270 120 q8 -10 16 0z" fill="#ffffff"/>
+      <ellipse cx="120" cy="178" rx="12" ry="8" fill="#e8574c"/><path d="M108 172 l-6 -6 M132 172 l6 -6" stroke="#e8574c" stroke-width="3" stroke-linecap="round"/>` }),
+    ship: () => ({ x: 286, y: 70, s: .42, bg: `
+      <rect width="360" height="200" fill="#c9ebff"/>${cloud(40, 30, .8)}
+      <rect y="140" width="360" height="60" fill="#5ab4e0"/>
+      <path d="M30 112 h300 l-24 36 h-252z" fill="#c0392b"/>
+      ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${50 + i * 36}" y="88" width="32" height="24" fill="${["#3b7dd8", "#f5a623", "#3fb39a", "#e86a6a", "#9a6ad6", "#3b7dd8"][i]}"/>`).join("")}
+      ${[0, 1, 2, 3].map((i) => `<rect x="${68 + i * 36}" y="64" width="32" height="24" fill="${["#3fb39a", "#e86a6a", "#3b7dd8", "#f5a623"][i]}"/>`).join("")}
+      <rect x="270" y="80" width="40" height="32" fill="#ffffff"/>` }),
+    fire: () => ({ x: 180, y: 106, s: .72, bg: `
+      <rect width="360" height="200" fill="#3a1d18"/>
+      ${[40, 110, 250, 320].map((x, i) => `<path d="M${x} 200 q-26 -60 0 -${100 + i * 10} q26 60 0 ${100 + i * 10}z" fill="#ff7a2f"/><path d="M${x} 200 q-14 -40 0 -${64 + i * 6} q14 40 0 ${64 + i * 6}z" fill="#ffd166"/>`).join("")}
+      <rect y="180" width="360" height="20" fill="#5a2c22"/>` }),
+    clothes: () => ({ x: 180, y: 104, s: .42, bg: `
+      <rect width="360" height="200" fill="#f6eefb"/>
+      <path d="M180 14 q0 -10 10 -10 q10 0 10 10 q0 8 -20 18 l-80 34 h180 l-80 -34" stroke="#9aa4ae" stroke-width="3" fill="none"/>
+      <path d="M110 50 l-50 30 l22 34 l26 -12 v86 h144 v-86 l26 12 l22 -34 l-50 -30 q-20 18 -70 18 q-50 0 -70 -18z" fill="#5b8def"/>
+      <path d="M150 50 q30 20 60 0" stroke="#3d6fc9" stroke-width="4" fill="none"/>` }),
+    eggpack: () => ({ x: 180, y: 54, s: .42, bg: `
+      <rect width="360" height="200" fill="#fff8e4"/>
+      <rect y="170" width="360" height="30" fill="#ead7bd"/>
+      <rect x="66" y="96" width="228" height="76" rx="12" fill="#eaf6ff" stroke="#a9c7dc" stroke-width="4"/>
+      ${[0, 1, 2, 3, 4].map((i) => `<ellipse cx="${96 + i * 42}" cy="${126}" rx="16" ry="20" fill="#fff3dc" stroke="#e8d2a8" stroke-width="2"/>`).join("")}
+      <path d="M66 110 h228" stroke="#ffffff" stroke-width="4" opacity=".7"/>` })
+  };
+
+  // ============================================================
+  //  モノのデータ
+  //  w: 選ばれやすさ / c: 条件 / f: 出典（📊） / m: 顔 / e: 変化
+  // ============================================================
+  const RARE_COIN_YEARS = [2011, 2012, 2013, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+  function pickCoinYear() {
+    // 生まれ年の重み（1989・1990年は消費税で大量に作られた）。年ごとの細かい枚数は演出
+    const list = [];
+    for (let y = 1955; y <= 2026; y++) {
+      let w;
+      if (y <= 1966) w = 3; else if (y <= 1988) w = 10; else if (y === 1989) w = 24; else if (y === 1990) w = 28;
+      else if (y <= 2000) w = 12; else if (y <= 2010) w = 3; else if (y <= 2013) w = .005; else if (y <= 2015) w = .3;
+      else if (y <= 2025) w = .005; else w = 1.3;
+      list.push({ y, w });
+    }
+    return wpick(list).y;
+  }
+
+  const MONOS = {
+    // ------------------------------------------------------------
+    coin: {
+      name: "1円玉", hero: coinHero, time: "year", condLabel: "ピカピカ度",
+      odds: "364億",
+      oddsText: "いま日本で使われている1円玉は、約364億枚。あなたはその中の1枚です。",
+      owners: ["小学3年生の男の子", "会社員のお父さん", "近所のおばあちゃん", "大学生のお姉さん", "外国から来た観光客", "パン屋の店長さん", "部活帰りの高校生", "定年したおじいちゃん", "保育園の先生", "トラックの運転手さん"],
+      init(c) {
+        c.birthYear = pickCoinYear();
+        c.rare = RARE_COIN_YEARS.includes(c.birthYear);
+        c.v.mint = pick(["大阪の本局", "さいたま支局", "広島支局"]);
+        c.v.pref = pick(PREFS);
+      },
+      year: (c) => c.birthYear + Math.floor(c.t),
+      ageLabel: (c) => `${Math.floor(c.t) + 1}年目`,
+      meta: (c) => `${MONOS.coin.year(c)}年 · ${c.gen > 1 ? c.gen + "代目の" : ""}1円玉（${c.genBirth}年生まれ）`,
+      birthText: (c) => `${c.birthYear}年、造幣局の${c.v.mint}で、アルミの板から打ち抜かれて生まれた。`,
+      start: "mint",
+      aging: 1.3, // 1年あたりのピカピカ度の減り
+      // 1枚の1円玉として75年以上たったら、すり減って回収される
+      force: (c) => (c.t - (c.genT || 0) > 75 && !["boj_return", "melt"].includes(c.place) ? "boj_return" : null),
+      places: {
+        mint: {
+          scene: "mint", label: (c) => `造幣局（${c.v.mint}）`, stay: [0.02, 0.06], n: [2, 3],
+          events: [
+            { t: "表には「若木」の模様、裏には大きな「1」。重さはぴったり1.00g、直径は20mm。", f: "財務省", m: "happy" },
+            { t: "検査の機械を、するりと通り抜けた。合格！", m: "happy" },
+            { t: "同じ日に生まれた仲間たちと、袋にぎゅうぎゅうに詰められた。", m: "surprise" },
+            { t: "この年は消費税（3%）が始まった年。おつりの1円玉が必要になり、約24億枚も作られた。まわりは仲間だらけだ。", f: "報道", c: (c) => c.genBirth === 1989, m: "surprise", w: 9 },
+            { t: "この年は1円玉が約28億枚も作られた。1円玉の大活躍の時代だ。", f: "報道", c: (c) => c.genBirth === 1990, w: 9 },
+            { t: "今年、ふだん使う1円玉は作られていない。きみは、記念の「貨幣セット」に入れるために作られた、とてもめずらしい1円玉だ。", f: "報道", c: (c) => c.rare, m: "surprise", w: 20 },
+            { t: "1円玉1枚を作るのに、1円以上かかると言われている。ちょっと申し訳ない。", f: "国会の質問主意書", m: "sad" }
+          ],
+          next: [
+            { to: "collector", w: (c) => (c.rare ? 1 : 0), t: "貨幣セットのケースに、6種類の仲間と一緒に収められた。" },
+            { to: "bank", w: (c) => (c.rare ? 0 : 1), t: "日本銀行に納められたあと、{pref}の銀行へ運ばれた。", e: { km: [80, 900] } }
+          ]
+        },
+        bank: {
+          scene: "bank", label: (c) => `${c.v.pref}の銀行`, stay: [0.03, 0.6], n: [1, 2],
+          events: [
+            { t: "50枚ずつ、紙でくるっと巻かれて「棒金」になった。", m: "neutral" },
+            { t: "金庫の中で、出番を静かに待った。", m: "sleep" },
+            { t: "両替機の中を、ジャラジャラと通り抜けた。", m: "surprise", r: true }
+          ],
+          next: [
+            { to: "register", w: 0.85, t: "おつり用として、{shop}のレジへ。" },
+            { to: "wallet", w: 0.15, t: "両替に来た{owner}の手に渡った。", e: { owner: true } },
+            { to: "boj_return", w: (c) => Math.max(0, (c.t - (c.genT || 0) - 15) / 30), t: "すり減っていたので、日本銀行に回収されることになった。" }
+          ]
+        },
+        register: {
+          scene: "register", label: (c) => `お店のレジ`, stay: [0.01, 0.4], n: [1, 2],
+          events: [
+            { t: "{shop}のレジの、1円玉の部屋に入った。", m: "happy", r: true },
+            { t: "店員さんが指先で、器用に数えてくれた。", m: "happy", r: true },
+            { t: "閉店後のレジしめで、何度も数えられた。", m: "neutral", r: true },
+            { t: "キャッシュレスで払うお客さんばかりで、出番がない日が続いた。", c: (c) => MONOS.coin.year(c) >= 2019, m: "sad", r: true }
+          ],
+          next: [
+            { to: "wallet", w: 0.85, t: "「1円のおつりです」。{owner}の財布へ。", e: { owner: true } },
+            { to: "donation", w: 0.1, t: "「おつりは募金箱へ」。レジ横の募金箱に入れられた。" },
+            { to: "street", w: 0.05, t: "おつりを受け取るとき、手からこぼれ落ちた！", m: "surprise" }
+          ]
+        },
+        wallet: {
+          scene: "wallet", label: (c) => `${c.v.owner}の財布の中`, stay: [0.05, 1.6], n: [1, 3],
+          choice: {
+            q: "財布の中で、どうしたい？",
+            a: [
+              { l: "使われて、旅に出たい", b: { register: 2.5, street: 1.6, saisen: 1.5 } },
+              { l: "財布の奥で、じっとしていたい", b: { piggy: 2.2, drawer: 2.2, charm: 1.8 } }
+            ]
+          },
+          events: [
+            { t: "小銭入れの中は、レシートと小銭でぎゅうぎゅうだ。", m: "surprise", r: true },
+            { t: "10円玉と100円玉にはさまれて、ちょっと肩身がせまい。", m: "sad" },
+            { t: "財布ごとズボンのポケットに入ったまま、洗濯機でぐるぐる回された！", m: "surprise", e: { cond: -6 } },
+            { t: "レジで{owner}が「1円あります」と探してくれた…けど、見つけてもらえなかった。", m: "sad" },
+            { t: "自販機に入れられたが、1円玉は使えずに、そのまま戻ってきた。", m: "sad" },
+            { t: "旅行で{pref2}へ。財布の中で、新幹線に乗った。", m: "happy", e: { km: [200, 900] } },
+            { t: "なぜか{owner}に「お守り」として、財布の奥のポケットに入れられた。", m: "happy", e: { flag: "charm" } },
+            { t: "テレビで「1円玉は廃止すべきか」という話をしていた。カナダは2013年に1セント硬貨をやめたらしい。", f: "国会の質問主意書", c: (c) => MONOS.coin.year(c) >= 2026, m: "surprise" },
+            { t: "両替や引き出しで、1円玉が手に入らずに困る人もいるらしい。今ではめずらしい存在だ。", f: "財務省の調査", c: (c) => MONOS.coin.year(c) >= 2026, m: "neutral" }
+          ],
+          next: [
+            { to: "register", w: 3, t: "{shop}で、ぴったり払うために使われた。" },
+            { to: "piggy", w: 2.2, t: "家に帰ると、余った小銭はまとめて貯金箱へ。家に現金を置く理由の約3割は「余った小銭の保管」だ。", f: "財務省の調査" },
+            { to: "street", w: 0.8, t: "財布から出すときに落とされ、コロコロと転がっていった。", m: "surprise" },
+            { to: "saisen", w: 0.6, t: "初詣で、お賽銭として投げ入れられた。" },
+            { to: "donation", w: 0.4, t: "コンビニの募金箱に、そっと入れられた。" },
+            { to: "drawer", w: 0.6, t: "財布の整理で、引き出しの小皿に置かれた。" },
+            { to: "charm", w: (c) => (c.flags.charm ? 0.35 : 0), t: "お守りの1円玉として、ずっと財布にいることになった。" }
+          ]
+        },
+        piggy: {
+          scene: "piggy", label: (c) => `${c.v.owner}の貯金びん`, stay: [2, 14], n: [2, 3],
+          events: [
+            { t: "中には仲間がたくさん。ほとんどが1円玉と5円玉だ。", m: "happy" },
+            { t: "ときどき持ち上げられて、ジャラジャラと振られた。", m: "surprise", r: true },
+            { t: "{owner}は、びんがいっぱいになるのを楽しみにしているらしい。", m: "happy" },
+            { t: "大掃除のとき、棚の上でほこりをかぶっていた。", m: "sleep", e: { cond: -4 } },
+            { t: "引っ越しの荷物と一緒に、{pref2}の新しい家へ。", m: "surprise", e: { km: [50, 1000] } }
+          ],
+          next: [
+            { to: "deposit", w: 2, t: "ついに、びんの中身が銀行に持っていかれた。" },
+            { to: "wallet", w: 1.5, t: "「小銭が足りない！」と、びんから取り出された。" },
+            { to: "lost", w: 0.7, t: "びんごと押し入れの奥へ。" }
+          ]
+        },
+        deposit: {
+          scene: "bank", label: () => "銀行の窓口", stay: [0.01, 0.1], n: [0, 1],
+          events: [
+            { t: "窓口で「硬貨を預けるには手数料がかかります」と言われた。1円玉100枚だと、手数料のほうが高い！", f: "報道", c: (c) => MONOS.coin.year(c) >= 2022, m: "surprise", w: 5 }
+          ],
+          next: [
+            { to: "piggy", w: (c) => (MONOS.coin.year(c) >= 2022 ? 1.5 : 0), t: "結局、家に持ち帰られた。", m: "sad" },
+            { to: "bank", w: 1, t: "銀行の中で数えられて、また出番を待つことになった。" },
+            { to: "boj_return", w: (c) => 0.8 + (c.t - (c.genT || 0)) / 30, t: "すり減った仲間と一緒に、日本銀行へ回収された。" }
+          ]
+        },
+        street: {
+          scene: "street", label: () => "道ばた", stay: [0.01, 1.5], n: [1, 2],
+          choice: {
+            q: "道ばたで、どうしたい？",
+            a: [
+              { l: "だれかに拾われたい", b: { wallet: 2.5, koban: 2 } },
+              { l: "もっと遠くへ転がりたい", b: { vend_under: 2.2, drain: 1.6 } }
+            ]
+          },
+          events: [
+            { t: "雨に打たれて、少しくすんだ。", m: "sad", e: { cond: -5 } },
+            { t: "誰かの靴に、思いきり踏まれた。", m: "surprise", e: { cond: -4 }, r: true },
+            { t: "ハトにつつかれた。食べ物じゃないよ。", m: "surprise" },
+            { t: "人が気づいて、拾うか迷って…行ってしまった。", m: "sad" }
+          ],
+          next: [
+            { to: "wallet", w: 2, t: "{owner}に拾われた。「1円を笑う者は1円に泣く」とつぶやいていた。", e: { owner: true }, m: "happy" },
+            { to: "koban", w: 0.4, t: "小学生に拾われて、交番に届けられた！", m: "happy" },
+            { to: "vend_under", w: 1.2, t: "コロコロ転がって、自販機の下のすき間へ。", m: "surprise" },
+            { to: "drain", w: 0.6, t: "排水溝のふたのすき間から、ポチャン。", m: "surprise" }
+          ]
+        },
+        koban: {
+          scene: "hand", label: () => "交番", stay: [0.1, 0.3], n: [1, 1],
+          events: [{ t: "おまわりさんが書類を書いてくれた。1円玉でも、ちゃんとした落とし物だ。", m: "happy" }],
+          next: [{ to: "wallet", w: 1, t: "落とし主は現れず、拾った小学生のものになった。", e: { owner: true }, m: "happy" }]
+        },
+        vend_under: {
+          scene: "vend_under", label: () => "自販機の下のすき間", stay: [1, 12], n: [2, 3],
+          events: [
+            { t: "暗い。ほこりと、先輩の10円玉がいる。", m: "neutral" },
+            { t: "夏の夜、自販機のブーンという音を聞きながら過ごした。", m: "sleep" },
+            { t: "子どもが定規でかき出そうとしたけど、届かなかった。", m: "sad" },
+            { t: "何年たっても、誰にも気づかれない。", m: "sleep", e: { cond: -6 } }
+          ],
+          next: [
+            { to: "wallet", w: 1.2, t: "自販機の入れ替え工事で見つかり、作業員さんのポケットへ。", e: { owner: true }, m: "surprise" },
+            { to: "street", w: (c) => (MONOS.coin.year(c) >= 2014 ? 1 : 0), t: "自販機が撤去されて、外に出られた。全国の自販機は、ピークの約509万台から約388万台まで減っている。", f: "日本自動販売システム機械工業会", m: "surprise" }
+          ]
+        },
+        saisen: {
+          scene: "shrine", label: () => "神社の賽銭箱", stay: [0.02, 0.3], n: [1, 2],
+          events: [
+            { t: "「{wish}」という願いと一緒に、投げ入れられた。", m: "happy" },
+            { t: "賽銭箱の中で、5円玉が「ご縁があるのはこっち」と自慢していた。", m: "neutral" },
+            { t: "お正月の3日間で、箱は小銭であふれた。", m: "surprise" }
+          ],
+          next: [{ to: "deposit", w: 1, t: "神社の人が、たくさんの小銭を銀行へ運んだ。" }]
+        },
+        donation: {
+          scene: "donation", label: () => "募金箱", stay: [0.1, 1], n: [1, 1],
+          events: [{ t: "「{cause}」ための募金箱だった。少しは役に立てたかな。", m: "happy" }],
+          next: [{ to: "deposit", w: 1, t: "集まった募金と一緒に、銀行へ。" }]
+        },
+        drawer: {
+          scene: "drawer", label: (c) => `${c.v.owner}の家の引き出し`, stay: [0.5, 8], n: [1, 2],
+          events: [
+            { t: "輪ゴムやクリップと一緒に、小皿の上で暮らした。", m: "neutral" },
+            { t: "ときどき小銭が増えたり減ったりする。", m: "neutral" },
+            { t: "誰にも開けられないまま、季節がいくつも過ぎた。", m: "sleep", e: { cond: -3 } }
+          ],
+          next: [
+            { to: "wallet", w: 1.5, t: "「1円足りない！」と、引き出しから取り出された。" },
+            { to: "forgotten", w: 1, t: "引き出しの奥へ、奥へと押しやられた。" }
+          ]
+        },
+        boj_return: {
+          scene: "bank", label: () => "日本銀行", stay: [0.05, 0.2], n: [1, 1],
+          events: [{ t: "すり減って模様が見えにくくなった仲間と一緒に、造幣局へ送られることになった。回収された硬貨の金属は、毎年数千トンにもなる。", f: "財務省", m: "neutral" }],
+          next: [{ to: "melt", w: 1, t: "造幣局の炉の中へ。", m: "surprise" }]
+        },
+        melt: {
+          scene: "furnace", label: () => "造幣局の溶解炉", stay: [0.01, 0.05], n: [1, 1],
+          events: [{ t: "熱い！ 溶かされて、アルミのかたまりに戻った。", m: "surprise" }],
+          rebirth: { max: 3, t: "そして、新しい1円玉として生まれ変わった！", end: "melted" }
+        },
+        // --- 結末 ---
+        collector: {
+          scene: "collector", label: () => "コレクターのケースの中", stay: [3, 30], n: [2, 3],
+          events: [
+            { t: "500円玉から1円玉まで、6種類が並んだきれいなケースに入った。", m: "happy" },
+            { t: "コレクターがルーペで、じっくり眺めてくれた。", m: "happy" },
+            { t: "オークションに出されて、約700円で落札された。額面の700倍！", f: "報道", m: "surprise", e: { km: [100, 800], owner: true } }
+          ],
+          end: { key: "collector", title: "ケースの中のスター", t: "一度も使われず、ピカピカのまま、大切にされ続けた。", short: "一度も使われずに、ケースの中で大切にされ続けた", m: "happy" }
+        },
+        charm: {
+          scene: "wallet", label: (c) => `${c.v.owner}の財布の奥`, stay: [5, 30], n: [1, 1],
+          events: [{ t: "{owner}が落ち込んだ日、財布の奥のきみを見て、少し笑った。", m: "happy" }],
+          end: { key: "charm", title: "お守りの1円玉", t: "{owner}のお守りとして、財布の中でずっと一緒に旅をした。", short: "だれかのお守りとして、ずっと財布の中で旅をした", m: "happy" }
+        },
+        lost: {
+          scene: "drawer", dark: true, label: () => "押し入れの奥", stay: [10, 40], n: [1, 1],
+          events: [{ t: "暗くて静か。ほかの小銭たちと、昔の話をした。", m: "sleep" }],
+          end: { key: "lost", title: "押し入れの眠り姫", t: "貯金びんごと忘れられて、押し入れの奥で眠り続けている。", short: "貯金びんごと忘れられ、押し入れの奥で眠り続けている", m: "sleep" }
+        },
+        forgotten: {
+          scene: "drawer", dark: true, label: () => "引き出しの一番奥", stay: [10, 40], n: [1, 1],
+          events: [{ t: "クリップと輪ゴムだけが、話し相手だ。", m: "sleep" }],
+          end: { key: "forgotten", title: "引き出しの主", t: "引き出しの奥で、そのまま静かに眠り続けた。", short: "引き出しの奥で、静かに眠り続けた", m: "sleep" }
+        },
+        drain: {
+          scene: "seafloor", label: () => "海の底", stay: [5, 50], n: [1, 2],
+          events: [
+            { t: "排水溝から川へ、川から海へ。長い旅だった。", m: "surprise", e: { km: [10, 80] } },
+            { t: "魚がつついていった。", m: "neutral" }
+          ],
+          end: { key: "sea", title: "海底の1円玉", t: "海の底の砂の上で、静かに暮らすことにした。", short: "排水溝から海へ流れ、海の底で静かに暮らしている", m: "sleep" }
+        }
+      },
+      ends: { melted: { title: "アルミのかたまり", t: "溶かされて、アルミのかたまりとして一生を終えた。", short: "最後は溶かされて、アルミのかたまりに戻った", m: "sleep", scene: "furnace" } }
+    },
+
+    // ------------------------------------------------------------
+    bottle: {
+      name: "ペットボトル", hero: bottleHero, time: "day", condLabel: "きれい度",
+      odds: "287億",
+      oddsText: "日本で1年間に売られるペットボトルは、約287億本。あなたはその中の1本です。",
+      oddsFact: "PETボトルリサイクル推進協議会",
+      owners: ["部活帰りの高校生", "会社員", "登山中のおじいさん", "塾帰りの小学生", "ランニング中のお姉さん", "旅行中の家族", "トラックの運転手さん", "大学生", "野球の観客", "保育園のお母さん"],
+      init(c) {
+        MONOS.bottle.newContent(c);
+        c.v.pref = pick(PREFS);
+        c.startYear = 2026;
+      },
+      newContent(c) {
+        // PETボトル用樹脂の用途別需要（2024年）の割合にもとづく。清涼飲料の中の内訳は演出
+        const it = wpick([
+          { k: "お茶", w: 27, kind: "drink" }, { k: "水", w: 18, kind: "drink" }, { k: "炭酸飲料", w: 15, kind: "drink" },
+          { k: "スポーツドリンク", w: 12, kind: "drink" }, { k: "コーヒー", w: 8, kind: "drink" }, { k: "ジュース", w: 9, kind: "drink" },
+          { k: "しょうゆ", w: 4.9, kind: "soy" }, { k: "シャンプー", w: 1.7, kind: "bath" }, { k: "化粧水", w: 1.6, kind: "bath" }, { k: "お酒", w: 1.1, kind: "drink" }
+        ]);
+        c.v.content = it.k; c.kind = it.kind; c.fill = 1;
+      },
+      year: (c) => c.startYear + Math.floor(c.t / 365),
+      ageLabel: (c) => `${Math.floor(c.t) + 1}日目`,
+      meta: (c) => `${MONOS.bottle.year(c)}年 · ${c.gen > 1 ? c.gen + "代目の" : ""}${c.v.content}のペットボトル`,
+      birthText: (c) => `${c.gen > 1 ? "" : ""}${c.v.pref}のボトル工場で、${c.v.content}のペットボトルとして生まれた。`,
+      start: "factory",
+      aging: 0,
+      places: {
+        factory: {
+          scene: "bottle_factory", label: (c) => `${c.v.pref}のボトル工場`, stay: [0.5, 2], n: [2, 3],
+          events: [
+            { t: "試験管みたいな形の「プリフォーム」が、熱い空気でふくらまされて、ボトルの形になった。", f: "PETボトルリサイクル推進協議会", m: "surprise" },
+            { t: "{content}がたっぷり注がれて、キャップがきゅっとしまった。", m: "happy" },
+            { t: "2004年のボトルより、28%も軽い体で生まれた。", f: "PETボトルリサイクル推進協議会", m: "happy" },
+            { t: "前の人生の記憶はない。でも、なんだか懐かしい気がする。", c: (c) => c.gen > 1, m: "neutral", w: 6 }
+          ],
+          next: [{ to: "truck", w: 1, t: "段ボールに詰められて、トラックに積まれた。", e: { km: [20, 300] } }]
+        },
+        truck: {
+          scene: "truck", label: () => "トラックの荷台", stay: [0.5, 3], n: [1, 2],
+          events: [
+            { t: "高速道路を走って、{pref2}へ。", m: "happy", e: { km: [40, 800] } },
+            { t: "サービスエリアで、運転手さんがひと休み。", m: "sleep" },
+            { t: "カーブのたびに、仲間とぶつかり合った。", m: "surprise", e: { cond: -3 } }
+          ],
+          next: [
+            { to: "shelf", w: (c) => (c.kind === "drink" ? 5 : 0), t: "コンビニの冷蔵ケースへ。" },
+            { to: "vending", w: (c) => (c.kind === "drink" ? 3 : 0), t: "自販機の中へ。" },
+            { to: "super", w: (c) => (c.kind === "drink" ? 1.5 : 10), t: "スーパーの棚へ。" }
+          ]
+        },
+        shelf: {
+          scene: "shelf", label: () => "コンビニの冷蔵ケース", stay: [1, 20], n: [1, 2],
+          events: [
+            { t: "となりには、同じ顔の仲間がずらり。", m: "happy" },
+            { t: "店員さんに、前へ前へと並べ直された。", m: "neutral" },
+            { t: "何人もが手に取って、また戻した。", m: "sad" },
+            { t: "ひんやりして、気持ちがいい。", m: "happy" }
+          ],
+          next: [{ to: "owner", w: 1, t: "{owner}に選ばれた！", e: { owner: true }, m: "happy" }]
+        },
+        vending: {
+          scene: "vending", label: () => "自販機の中", stay: [1, 15], n: [1, 2],
+          events: [
+            { t: "自販機の中で、きんきんに冷やされた。", m: "happy" },
+            { t: "ガコン、と落ちる順番を、じっと待っている。", m: "neutral" },
+            { t: "夜になると、自販機の明かりに虫が集まってきた。", m: "neutral" }
+          ],
+          next: [{ to: "owner", w: 1, t: "ガコン！ {owner}が買ってくれた。", e: { owner: true }, m: "surprise" }]
+        },
+        super: {
+          scene: "super", label: () => "スーパーの棚", stay: [2, 30], n: [1, 2],
+          events: [
+            { t: "特売のシールを貼られた。", m: "neutral" },
+            { t: "カートにぶつかられて、ちょっとへこんだ。", m: "surprise", e: { cond: -5 } }
+          ],
+          next: [
+            { to: "owner", w: (c) => (c.kind === "drink" ? 1 : 0), t: "{owner}のかごに入った。", e: { owner: true } },
+            { to: "kitchen", w: (c) => (c.kind === "soy" ? 1 : 0), t: "{owner}のかごに入って、家へ。", e: { owner: true } },
+            { to: "bathroom", w: (c) => (c.kind === "bath" ? 1 : 0), t: "{owner}のかごに入って、家へ。", e: { owner: true } }
+          ]
+        },
+        owner: {
+          scene: "hand", label: (c) => `${c.v.owner}の手の中`, stay: [0.1, 3], n: [2, 3],
+          choice: {
+            q: "中身を飲み終わったら、どうしてほしい？",
+            a: [
+              { l: "ちゃんと回収ボックスへ", b: { bin: 1.6, sort: 1.6 } },
+              { l: "もっと世界を見てみたい", b: { bench: 4, litter: 4 } }
+            ]
+          },
+          events: [
+            { t: "{owner}が、ごくごくと一気に半分飲んだ。", m: "surprise", e: { fill: -0.5 } },
+            { t: "部活の休けい時間、みんなで回し飲みされた。", m: "happy", e: { fill: -0.4 } },
+            { t: "カバンの中で、教科書の下じきになった。", m: "sad", e: { cond: -6 } },
+            { t: "冷凍庫で凍らされて、カチカチになった！", m: "surprise", e: { cond: -3 } },
+            { t: "{owner}と一緒に、{outing}へお出かけ。", m: "happy", e: { km: [3, 120] } },
+            { t: "飲み終わったあと、水を入れて何日か使ってもらえた。", m: "happy", e: { fill: -1 } },
+            { t: "キャップをなくされた。すーすーする。", m: "sad" }
+          ],
+          next: [
+            { to: "bin", w: 45, t: "飲み終わって、自販機の横の回収ボックスへ。", e: { fill: -1 } },
+            { to: "sort", w: 47, t: "家に持ち帰られて、ラベルをはがされ、つぶされて、資源ごみの日に出された。", e: { fill: -1, cond: -8 } },
+            { to: "burn", w: 4, t: "燃えるゴミの袋に入れられてしまった。", e: { fill: -1 } },
+            { to: "bench", w: 2, t: "公園のベンチに、置きざりにされた。" },
+            { to: "litter", w: 2, t: "道ばたに、ポイ捨てされた。", e: { fill: -1 } }
+          ]
+        },
+        kitchen: {
+          scene: "kitchen", label: (c) => `${c.v.owner}の家のキッチン`, stay: [30, 120], n: [2, 3],
+          events: [
+            { t: "冷蔵庫のドアポケットが、定位置になった。", m: "happy" },
+            { t: "卵かけご飯のたびに、出番がくる。", m: "happy", e: { fill: -0.3 } },
+            { t: "お刺身の日は、大活躍だった。", m: "happy", e: { fill: -0.3 } },
+            { t: "最後の数滴を出そうと、逆さにして振られた。", m: "surprise", e: { fill: -1 } }
+          ],
+          next: [
+            { to: "sort", w: 8, t: "中を洗われて、資源ごみの日に出された。" },
+            { to: "burn", w: 2, t: "燃えるゴミに出されてしまった。" }
+          ]
+        },
+        bathroom: {
+          scene: "bath", label: (c) => `${c.v.owner}の家のお風呂場`, stay: [40, 150], n: [2, 2],
+          events: [
+            { t: "毎晩、湯気の中で出番がくる。", m: "happy", e: { fill: -0.4 } },
+            { t: "最後は、水を入れてシャカシャカ振られ、使い切られた。", m: "surprise", e: { fill: -1 } }
+          ],
+          next: [
+            { to: "plastic", w: 1, t: "プラスチック資源ごみの日に出された。" },
+            { to: "burn", w: 1, t: "燃えるゴミに出された。" }
+          ]
+        },
+        bin: {
+          scene: "bin", label: () => "ペットボトル回収ボックス", stay: [0.5, 5], n: [1, 1],
+          events: [
+            { t: "仲間でぎゅうぎゅうの回収ボックス。日本では、ペットボトルの91.9%が回収されている。", f: "PETボトルリサイクル推進協議会", m: "happy" }
+          ],
+          next: [{ to: "plant", w: 1, t: "回収のトラックにゆられて、リサイクル工場へ。", e: { km: [10, 150] } }]
+        },
+        sort: {
+          scene: "bin", label: () => "資源ごみの集積所", stay: [0.5, 4], n: [1, 1],
+          events: [{ t: "収集車がやって来た。", m: "happy" }],
+          next: [{ to: "plant", w: 1, t: "リサイクル工場へ運ばれた。", e: { km: [10, 150] } }]
+        },
+        plant: {
+          scene: "recycle_plant", label: () => "リサイクル工場", stay: [3, 30], n: [2, 2],
+          events: [
+            { t: "細かく砕かれて、「フレーク」というかけらになった。", m: "surprise", e: { cond: -20 } },
+            { t: "よく洗われて、高温で汚れを飛ばされた。", m: "surprise", e: { cond: 30 } }
+          ],
+          // 再生PET樹脂の用途（2024年度）と、国内・海外の再資源化量の割合にもとづく
+          next: [
+            { to: "reborn", w: 46, t: "そして、またペットボトルに生まれ変わることになった！（ボトルtoボトル）", f: "PETボトルリサイクル推進協議会", m: "happy" },
+            { to: "egg", w: 20.4, t: "卵パックなどの、透明な容器になることになった。", f: "PETボトルリサイクル推進協議会" },
+            { to: "fiber", w: 6.2, t: "糸にされて、服になることになった。ペットボトルが服になるのは、約13本に1本。", f: "PETボトルリサイクル推進協議会", m: "surprise" },
+            { to: "molded", w: 5.4, t: "形を変えて、植木鉢や文房具になることになった。", f: "PETボトルリサイクル推進協議会" },
+            { to: "ship", w: 19.8, t: "フレークのまま、海外の工場へ輸出されることになった。", f: "PETボトルリサイクル推進協議会", m: "surprise" }
+          ]
+        },
+        reborn: {
+          scene: "recycle_plant", label: () => "リサイクル工場", stay: [5, 20], n: [0, 0],
+          rebirth: { max: 8, t: "新しいペットボトルとして、もう一度生まれた！ ボトルtoボトルは、何度でもくり返せる。", f: "PETボトルリサイクル推進協議会", end: "manytimes" }
+        },
+        bench: {
+          scene: "bench", label: () => "夕方の公園のベンチ", stay: [1, 7], n: [1, 2],
+          events: [
+            { t: "半分残ったまま、置いていかれた。", m: "sad" },
+            { t: "夜の公園。カラスがじっとこっちを見ている。", m: "surprise" },
+            { t: "雨が降ってきた。", m: "sad", e: { cond: -4 } }
+          ],
+          next: [
+            { to: "bin", w: 2, t: "掃除のおじさんが、回収ボックスに入れてくれた。", m: "happy" },
+            { to: "litter", w: 1, t: "風に吹かれて、植え込みへ転がった。", m: "surprise" }
+          ]
+        },
+        litter: {
+          scene: "street", label: () => "道ばたの植え込み", stay: [3, 60], n: [1, 2],
+          events: [
+            { t: "植え込みの中で、ほこりをかぶった。", m: "sad", e: { cond: -10 } },
+            { t: "大雨の日、側溝に流された。", m: "surprise" }
+          ],
+          next: [
+            { to: "sea", w: 2, t: "川に流れ込んで、そのまま下っていった。", e: { km: [5, 60] }, m: "surprise" },
+            { to: "bin", w: 1, t: "地域のゴミ拾いボランティアに拾われた。", m: "happy" }
+          ]
+        },
+        sea: {
+          scene: "sea", label: () => "海の上", stay: [30, 600], n: [2, 3],
+          events: [
+            { t: "ついに海へ出た。波にゆられて、どこまでも。", m: "surprise", e: { km: [100, 2000] } },
+            { t: "海鳥が、ひと休みしていった。", m: "neutral" },
+            { t: "日本の海岸に流れ着くごみの中で、ペットボトルは個数で6.9%。キャップは17.6%で一番多い。", f: "環境省", m: "sad" },
+            { t: "強い日差しで、体がだんだん白っぽくなってきた。", m: "sad", e: { cond: -15 } }
+          ],
+          next: [
+            { to: "beach", w: 2, t: "{beach}の浜に、流れ着いた。", e: { km: [100, 1500] } },
+            { to: "drift", w: 1, t: "流れに乗って、さらに遠くへ。", e: { km: [500, 5000] } }
+          ]
+        },
+        beach: {
+          scene: "beach", label: () => "浜辺", stay: [5, 120], n: [1, 2],
+          events: [
+            { t: "浜には、外国の言葉のラベルのボトルもたくさん。対馬の浜では、半分以上が韓国語のラベルだという。", f: "環境省", m: "surprise" },
+            { t: "カニが、中をのぞいていった。", m: "surprise" }
+          ],
+          next: [
+            { to: "bin", w: 2, t: "海岸清掃の人たちに拾われた！", m: "happy" },
+            { to: "sand", w: 1, t: "砂に少しずつ、うもれていった。" }
+          ]
+        },
+        ship: {
+          scene: "ship", label: () => "コンテナ船の上", stay: [10, 30], n: [1, 1],
+          init: (c) => {
+            // 2026年7月の輸出先の割合にもとづく
+            const d = wpick([{ k: "マレーシア", w: 27, km: 5300 }, { k: "台湾", w: 25, km: 2100 }, { k: "アメリカ", w: 15, km: 9000 }, { k: "ベトナム", w: 14, km: 3600 }, { k: "韓国", w: 12, km: 1000 }, { k: "インドネシア", w: 6, km: 5800 }]);
+            c.v.country = d.k; c.km += d.km;
+          },
+          events: [{ t: "コンテナ船で、{country}へ。使用済みペットボトルの輸出先は、マレーシア・台湾・アメリカなど。", f: "PETボトルリサイクル推進協議会", m: "happy" }],
+          end: { key: "export", title: "海を渡ったボトル", t: "{country}の工場で、新しい何かに生まれ変わった。", short: "{country}へ海を渡って、新しい何かに生まれ変わった", m: "happy" }
+        },
+        // --- 結末 ---
+        egg: {
+          scene: "eggpack", label: () => "スーパーの卵売り場", stay: [10, 40], n: [0, 0],
+          end: { key: "egg", title: "卵を守るもの", t: "卵パックに生まれ変わって、毎日6個の卵を守っている。", short: "卵パックに生まれ変わって、卵を守っている", m: "happy" }
+        },
+        fiber: {
+          scene: "clothes", label: () => "服屋さんのハンガー", stay: [30, 200], n: [0, 0],
+          end: { key: "fiber", title: "服になったボトル", t: "青いTシャツに生まれ変わって、だれかと一緒に夏を過ごした。", short: "Tシャツに生まれ変わった（約13本に1本の確率）", m: "happy" }
+        },
+        molded: {
+          scene: "recycle_plant", label: () => "文房具の工場", stay: [10, 60], n: [0, 0],
+          end: { key: "molded", title: "形を変えたボトル", t: "文房具に生まれ変わって、どこかの学校の机の上にいる。", short: "文房具に生まれ変わった", m: "happy" }
+        },
+        plastic: {
+          scene: "recycle_plant", label: () => "プラスチックのリサイクル工場", stay: [5, 30], n: [0, 0],
+          end: { key: "plastic", title: "プラスチックの旅人", t: "ほかのプラスチックと一緒に、新しい製品の材料になった。", short: "プラスチック製品の材料になった", m: "neutral" }
+        },
+        burn: {
+          scene: "fire", label: () => "清掃工場", stay: [1, 5], n: [0, 0],
+          end: { key: "burn", title: "燃えたボトル", t: "清掃工場で燃やされた。その熱の一部は、電気に変わった。", short: "清掃工場で燃やされ、熱の一部は電気になった", m: "surprise" }
+        },
+        drift: {
+          scene: "sea", label: () => "どこかの海", stay: [300, 3000], n: [0, 0],
+          end: { key: "drift", title: "海をただようボトル", t: "今もどこかの海を、ただよい続けている。", short: "今もどこかの海をただよい続けている", m: "sleep" }
+        },
+        sand: {
+          scene: "beach", label: () => "浜辺の砂の中", stay: [100, 2000], n: [0, 0],
+          end: { key: "sand", title: "浜辺の住人", t: "砂にうもれて、浜辺の一部になった。", short: "浜辺の砂にうもれて、浜の一部になった", m: "sleep" }
+        }
+      },
+      ends: { manytimes: { title: "生まれ変わりの達人", t: "何度も何度も生まれ変わって、ついに旅を終えた。", short: "何度もペットボトルに生まれ変わった", m: "happy", scene: "bottle_factory" } }
+    }
+  };
+
+  // ============================================================
+  //  進行
+  // ============================================================
+  const st = { mono: null, key: "", c: null, beats: [], placeDef: null, speed: 1, timer: null, waiting: false, done: false, bias: {}, scene: "mint", mood: "happy", label: "" };
+
+  const screens = ["title", "birth", "life"];
+  function show(name) { screens.forEach((s) => ($(s).hidden = s !== name)); window.scrollTo(0, 0); }
+
+  function drawScene(svg, sceneId, mood, c, mono) {
+    const sc = (SCENES[sceneId] || SCENES.mint)(c);
+    const hero = mono.hero(c, mood);
+    svg.innerHTML = sc.bg + `<g transform="translate(${sc.x},${sc.y}) rotate(${sc.r || 0}) scale(${sc.s})"><g class="hero-bob">${hero}</g></g>`;
+  }
+
+  function newContext(mono) {
+    const c = { t: 0, gen: 1, owners: 0, km: 0, cond: 100, fill: 1, v: {}, used: {}, flags: {}, choices: 0, place: "" };
+    mono.init(c);
+    c.genBirth = c.birthYear || 2026;
+    return c;
+  }
+
+  function beginBirth(key) {
+    st.key = key || (Math.random() < 0.5 ? "coin" : "bottle");
+    st.mono = MONOS[st.key];
+    st.c = newContext(st.mono);
+    $("birthName").textContent = st.mono.name;
+    $("birthOdds").innerHTML = `${esc(st.mono.odds)}<small>分の1</small>`;
+    $("birthOddsText").textContent = st.mono.oddsText;
+    const firstScene = st.mono.places[st.mono.start].scene;
+    drawScene($("birthSvg"), firstScene, "happy", st.c, st.mono);
+    show("birth");
+  }
+
+  function startLife() {
+    st.done = false; st.waiting = false;
+    $("logBox").innerHTML = "";
+    $("endCard").hidden = true;
+    $("choiceBox").hidden = true;
+    $("controls").hidden = false;
+    $("condLabel").textContent = st.mono.condLabel;
+    show("life");
+    enterPlace(st.mono.start, st.mono.birthText(st.c), null, "happy");
+    render();
+    schedule(300);
+  }
+
+  function enterPlace(id, arriveText, arriveFact, arriveMood) {
+    const c = st.c, mono = st.mono;
+    const p = mono.places[id];
+    c.place = id;
+    c.flags.dark = !!p.dark;
+    if (p.init) p.init(c);
+    st.placeDef = p; st.placeId = id; st.bias = {};
+    const beats = [];
+    if (arriveText) beats.push({ text: arriveText, fact: arriveFact, mood: arriveMood || "neutral", big: true });
+
+    const n = rint(p.n[0], p.n[1]);
+    let pool = (p.events || []).map((e, i) => ({ ...e, key: id + ":" + i })).filter((e) => (!e.c || e.c(c)) && (e.r || !c.used[e.key]));
+    for (let k = 0; k < n && pool.length; k++) {
+      const e = wpick(pool.map((x) => ({ ...x, w: x.w || 1 })));
+      pool = pool.filter((x) => x.key !== e.key);
+      c.used[e.key] = true;
+      beats.push({ text: e.t, fact: e.f, mood: e.m || "neutral", e: e.e });
+    }
+    if (p.end) beats.push({ end: p.end, mood: p.end.m });
+    else if (p.rebirth) beats.push({ rebirth: p.rebirth });
+    else {
+      if (p.choice && c.choices < 3) beats.push({ choice: p.choice });
+      beats.push({ go: true });
+    }
+    // 滞在時間を、文章のある出来事に分けて割り当てる
+    const stay = rand(p.stay[0], p.stay[1]);
+    const textBeats = beats.filter((b) => b.text !== undefined || b.end);
+    textBeats.forEach((b) => (b.dt = stay / Math.max(1, textBeats.length)));
+    st.beats = beats;
+    st.scene = p.scene;
+    st.label = fill(p.label, c);
+  }
+
+  function applyEffect(e) {
+    if (!e) return;
+    const c = st.c;
+    if (e.km) c.km += rand(e.km[0], e.km[1]);
+    if (e.cond) c.cond = Math.max(3, Math.min(100, c.cond + e.cond));
+    if (e.fill) c.fill = Math.max(0, c.fill + e.fill);
+    if (e.flag) c.flags[e.flag] = true;
+    if (e.owner) { c.v.owner = pick(st.mono.owners); c.owners += 1; }
+  }
+
+  function advanceTime(dt) {
+    const c = st.c;
+    if (!dt) return;
+    c.t += dt;
+    if (st.mono.aging) c.cond = Math.max(3, c.cond - st.mono.aging * dt);
+  }
+
+  function step() {
+    if (st.done || st.waiting) return;
+    const b = st.beats.shift();
+    if (!b) return;
+
+    if (b.choice) { showChoice(b.choice); return; }
+    if (b.go) { transition(); step(); return; }
+    if (b.rebirth) { doRebirth(b.rebirth); return; }
+
+    advanceTime(b.dt);
+    applyEffect(b.e);
+    if (b.end) { finish(b.end, st.scene); return; }
+    st.mood = b.mood || "neutral";
+    addLog(fill(b.text, st.c), b.fact, b.big);
+    render();
+    schedule();
+  }
+
+  function transition() {
+    const c = st.c, p = st.placeDef;
+    const forced = st.mono.force && st.mono.force(c);
+    let opt;
+    if (forced) {
+      opt = { to: forced, t: "すっかりすり減ってしまい、日本銀行に回収されることになった。" };
+    } else {
+      const opts = p.next.map((n) => ({ n, w: Math.max(0, val(n.w === undefined ? 1 : n.w, c)) * (st.bias[n.to] || 1) })).filter((o) => o.w > 0);
+      opt = wpick(opts).n;
+    }
+    applyEffect(opt.e);
+    const text = opt.t ? fill(opt.t, c) : null;
+    enterPlace(opt.to, text, opt.f, opt.m || "neutral");
+  }
+
+  function doRebirth(r) {
+    const c = st.c;
+    if (c.gen >= r.max) { finish(st.mono.ends[r.end], st.mono.ends[r.end].scene); return; }
+    c.gen += 1;
+    c.cond = 100;
+    c.genT = c.t;
+    if (st.key === "coin") { c.birthYear = MONOS.coin.year(c); c.genBirth = c.birthYear; c.rare = false; c.t = Math.floor(c.t); }
+    if (st.key === "bottle") { MONOS.bottle.newContent(c); }
+    c.used = {};
+    enterPlace(st.mono.start, null);
+    st.mood = "happy";
+    addLog(`${c.gen}代目。${r.t}`, r.f, true);
+    render();
+    schedule();
+  }
+
+  function showChoice(ch) {
+    st.waiting = true;
+    clearTimeout(st.timer);
+    $("choiceQ").textContent = "🤔 " + ch.q;
+    const box = $("choiceBtns");
+    box.innerHTML = "";
+    ch.a.forEach((a) => {
+      const btn = document.createElement("button");
+      btn.textContent = a.l;
+      btn.addEventListener("click", () => {
+        st.bias = a.b;
+        st.c.choices += 1;
+        $("choiceBox").hidden = true;
+        addLog(`（あなたは「${a.l}」と願った）`, null, false, true);
+        st.waiting = false;
+        step();
+      });
+      box.appendChild(btn);
+    });
+    $("choiceBox").hidden = false;
+    $("choiceBox").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function timeLabel() {
+    const c = st.c;
+    return st.mono.ageLabel(c);
+  }
+
+  function addLog(text, fact, big, mine) {
+    const div = document.createElement("div");
+    div.className = "entry" + (big ? " big" : "") + (mine ? " mine" : "");
+    const when = document.createElement("div");
+    when.className = "when";
+    when.textContent = timeLabel();
+    const what = document.createElement("div");
+    what.className = "what";
+    what.textContent = text;
+    if (fact) {
+      const f = document.createElement("span");
+      f.className = "fact";
+      f.textContent = "📊 " + fact;
+      what.appendChild(document.createElement("br"));
+      what.appendChild(f);
+    }
+    div.appendChild(when); div.appendChild(what);
+    $("logBox").prepend(div);
+  }
+
+  function render() {
+    const c = st.c;
+    $("ageText").textContent = st.mono.ageLabel(c);
+    $("metaText").textContent = st.mono.meta(c);
+    drawScene($("sceneSvg"), st.scene, st.mood, c, st.mono);
+    $("caption").textContent = "📍 " + st.label;
+    $("condText").textContent = Math.round(c.cond);
+    $("ownerText").textContent = c.owners + "人";
+    $("kmText").textContent = fmtKm(c.km);
+  }
+
+  function schedule(ms) {
+    clearTimeout(st.timer);
+    if (st.done || st.waiting || st.speed === 0) return;
+    st.timer = setTimeout(step, ms !== undefined ? ms : 1700 / st.speed);
+  }
+
+  function lifeLength() {
+    const c = st.c;
+    // 画面上の「○日目」「○年目」と数字をそろえる
+    if (st.mono.time === "year") return (Math.floor(c.t) + 1) + "年";
+    const d = Math.floor(c.t) + 1;
+    if (d >= 730) return (d / 365).toFixed(1) + "年（" + d.toLocaleString() + "日）";
+    return d + "日";
+  }
+
+  function finish(end, sceneId) {
+    const c = st.c;
+    st.done = true;
+    clearTimeout(st.timer);
+    st.scene = sceneId || st.scene;
+    st.mood = end.m || "sleep";
+    st.end = end;
+    addLog(fill(end.t, c), end.f, true);
+    render();
+    $("controls").hidden = true;
+    $("endTitle").textContent = "🏷 " + end.title;
+    $("endLine").textContent = fill(end.t, c);
+    const items = [
+      ["生きた時間", lifeLength()],
+      ["持ち主", c.owners + "人"],
+      ["旅した距離", fmtKm(c.km)],
+      ["生まれ変わり", (c.gen - 1) + "回"]
+    ];
+    $("endGrid").innerHTML = items.map(([a, b]) => `<div><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join("");
+    $("endCard").hidden = false;
+    $("endCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function shareText() {
+    const c = st.c, m = st.mono;
+    const first = m === MONOS.coin ? `${c.birthYearFirst || c.genBirth}年に1円玉として生まれ` : `${m.name}として生まれ`;
+    return `【モノに生まれたら】\n${first}、${fill(st.end.short, c)}。\n（${lifeLength()}の一生・${m.odds}分の1）\n#モノに生まれたら`;
+  }
+  const pageUrl = () => location.href.split("?")[0].split("#")[0];
+
+  // ============================================================
+  //  ボタン
+  // ============================================================
+  $("startBtn").addEventListener("click", () => beginBirth());
+  document.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => beginBirth(b.dataset.pick)));
+  $("liveBtn").addEventListener("click", () => { st.c.birthYearFirst = st.c.genBirth; startLife(); });
+  $("againBtn").addEventListener("click", () => beginBirth());
+  document.querySelectorAll("[data-speed]").forEach((b) => b.addEventListener("click", () => {
+    st.speed = Number(b.dataset.speed);
+    document.querySelectorAll("[data-speed]").forEach((x) => x.classList.toggle("on", x === b));
+    schedule();
+  }));
+  $("nextBtn").addEventListener("click", () => { clearTimeout(st.timer); step(); });
+  $("shareBtn").addEventListener("click", () => {
+    const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText()) + "&url=" + encodeURIComponent(pageUrl());
+    window.open(url, "_blank", "noopener");
+  });
+  $("copyBtn").addEventListener("click", () => {
+    const btn = $("copyBtn");
+    const done = (msg) => { btn.textContent = msg; setTimeout(() => (btn.textContent = "結果をコピーする"), 1800); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareText() + " " + pageUrl()).then(() => done("コピーしました！"), () => done("コピーできませんでした"));
+    } else done("コピーできませんでした");
+  });
+
+  // タイトルのイラスト（1円玉とペットボトルが並ぶ）
+  (function titleArt() {
+    const c1 = { cond: 100, v: { content: "お茶" }, fill: 1, flags: {} };
+    $("titleSvg").innerHTML = `
+      <rect width="360" height="200" fill="#ffe9d6"/>${cloud(30, 34, .9)}${cloud(250, 26, .8)}
+      <circle cx="300" cy="150" r="80" fill="#ffd2b3"/>
+      <rect y="168" width="360" height="32" fill="#f3c9a8"/>
+      <g transform="translate(130,128) scale(1)"><g class="hero-bob">${coinHero(c1, "happy")}</g></g>
+      <g transform="translate(228,110) scale(.78)"><g class="hero-bob" style="animation-delay:.6s">${bottleHero(c1, "happy")}</g></g>
+      ${sparkle(80, 70, .8)}${sparkle(290, 56, .7)}${sparkle(180, 40, .6)}`;
+  })();
+})();
+</script>
+</body>
+</html>
