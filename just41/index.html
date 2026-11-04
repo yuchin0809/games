@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ジャスト41℃｜お風呂の温度ぴったり合わせゲーム</title>
-<meta name="description" content="熱湯と水の蛇口だけで、お風呂をぴったり41℃にするゲーム。入れすぎると熱湯風呂や氷風呂に。3回勝負で、誤差の小さい人ほど湯加減マスター！">
-<meta property="og:title" content="ジャスト41℃｜お風呂の温度ぴったり合わせゲーム">
-<meta property="og:description" content="熱湯と水の蛇口だけで、お風呂をぴったり41℃にできる？ 入れすぎると熱湯風呂や氷風呂に！">
+<title>ジャスト41℃｜温度計のないお風呂を41℃にしろ</title>
+<meta name="description" content="温度計なし。頼れるのは湯気と「指で確かめる」だけ。邪魔が入るお風呂を30秒でぴったり41℃にして、家族を満足させよう。">
+<meta property="og:title" content="ジャスト41℃｜温度計のないお風呂を41℃にしろ">
+<meta property="og:description" content="温度計なし・邪魔だらけ。家族が入る前に、お風呂をぴったり41℃にできる？">
 <meta property="og:type" content="website">
 <style>
   :root{
@@ -19,6 +19,7 @@
     --cold:#2e8be8;
     --ok:#2ea36b;
     --tile:#f4efe8;
+    --warn:#d93a3a;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -28,6 +29,7 @@
     font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
     line-height:1.6;
     -webkit-tap-highlight-color:transparent;
+    overflow-x:hidden;
   }
   .wrap{
     max-width:480px;
@@ -46,6 +48,7 @@
   .card h2{font-size:1.05rem;margin-bottom:6px}
   .card p, .card li{font-size:.92rem;color:var(--sub)}
   .card ul{padding-left:1.2em}
+  .card li{margin-top:4px}
   button{
     font:inherit;
     cursor:pointer;
@@ -64,7 +67,6 @@
     margin-top:12px;
   }
   .btn-main:active{transform:translateY(3px);box-shadow:0 1px 0 #1f7a50}
-  .btn-main:disabled{background:#b9b0a6;box-shadow:0 4px 0 #988f85;cursor:not-allowed}
   .btn-sub{
     display:block;width:100%;
     padding:12px;
@@ -72,15 +74,11 @@
     color:var(--ink);background:var(--tile);
     margin-top:10px;
   }
-  .toggle{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.92rem;color:var(--ink)}
-  .toggle input{width:20px;height:20px}
+  .btn-sub:disabled{opacity:.45;cursor:not-allowed}
   [hidden]{display:none !important}
 
   /* ゲーム画面 */
-  .status{
-    display:flex;justify-content:space-between;gap:8px;
-    margin-top:12px;
-  }
+  .status{display:flex;gap:8px;margin-top:12px}
   .status div{
     flex:1;text-align:center;
     background:var(--card);border:2px solid var(--line);border-radius:14px;
@@ -88,18 +86,32 @@
   }
   .status span{display:block;font-size:.72rem;color:var(--sub)}
   .status b{font-size:1.25rem;font-variant-numeric:tabular-nums}
-  .target{
-    text-align:center;margin-top:10px;font-size:.95rem;color:var(--sub);
+  .timebar{
+    height:10px;border-radius:5px;background:var(--line);margin-top:10px;overflow:hidden;
   }
+  .timebar i{display:block;height:100%;width:100%;background:var(--ok);transition:background-color .3s}
+  .timebar i.low{background:var(--warn)}
+  .target{text-align:center;margin-top:8px;font-size:.92rem;color:var(--sub)}
   .target b{color:var(--ok);font-size:1.1rem}
 
-  .stage{
-    position:relative;
-    height:280px;
-    margin-top:10px;
+  .event{
+    min-height:2.4em;
+    margin-top:8px;
+    text-align:center;
+    font-weight:bold;
+    color:var(--warn);
+    font-size:1rem;
   }
+  .event.pop{animation:pop .5s}
+  @keyframes pop{
+    0%{transform:scale(.7);opacity:0}
+    60%{transform:scale(1.12);opacity:1}
+    100%{transform:scale(1)}
+  }
+
+  .stage{position:relative;height:270px;margin-top:2px}
   .tub{
-    position:absolute;left:8%;right:8%;bottom:0;height:200px;
+    position:absolute;left:8%;right:8%;bottom:0;height:190px;
     border:6px solid #cfc3b6;
     border-radius:16px 16px 60px 60px;
     background:#fdfbf8;
@@ -108,8 +120,7 @@
   .water{
     position:absolute;left:0;right:0;bottom:0;
     height:0%;
-    background:hsl(200 70% 65%);
-    transition:background-color .15s linear;
+    background:rgb(143,208,255);
   }
   .water::before{
     content:"";position:absolute;left:0;right:0;top:-6px;height:12px;
@@ -117,29 +128,47 @@
     border-radius:50% 50% 0 0 / 100% 100% 0 0;
     filter:brightness(1.1);
   }
-  .water .steam{
-    position:absolute;top:-34px;left:0;right:0;text-align:center;
-    font-size:1.4rem;opacity:0;transition:opacity .3s;
+  .steam{
+    position:absolute;left:0;right:0;bottom:190px;
+    text-align:center;font-size:1.8rem;opacity:0;
+    pointer-events:none;
   }
   .stream{
-    position:absolute;top:36px;width:14px;
+    position:absolute;top:44px;width:14px;
     height:0;border-radius:7px;
     transition:height .12s linear;
   }
   .stream.hot{left:22%;background:#ff8f6b}
   .stream.cold{right:22%;background:#6bb4ff}
-  .stream.on{height:150px}
-  .faucet{
-    position:absolute;top:0;font-size:2rem;
-  }
+  .stream.on{height:146px}
+  .faucet{position:absolute;top:6px;font-size:2rem}
   .faucet.hot{left:17%}
   .faucet.cold{right:17%}
-  .faucet::after{
-    content:"";position:absolute;left:10px;top:30px;width:14px;height:12px;
-    background:#9aa4ad;border-radius:0 0 6px 6px;
+  .cat{
+    position:absolute;top:2px;left:-20%;font-size:2.2rem;
+    transition:left 2.4s linear;
   }
+  .cat.go{left:105%}
+  .finger{
+    position:absolute;left:50%;top:150px;transform:translateX(-50%);
+    font-size:2.6rem;opacity:0;transition:opacity .15s;z-index:2;
+  }
+  .finger.on{opacity:1}
+  .bubble{
+    position:absolute;left:50%;top:108px;transform:translateX(-50%);
+    background:#fff;border:2px solid var(--ink);border-radius:14px;
+    padding:4px 12px;font-weight:bold;white-space:nowrap;
+    opacity:0;transition:opacity .15s;z-index:2;
+  }
+  .bubble.on{opacity:1}
+  .full{
+    position:absolute;left:50%;bottom:70px;transform:translateX(-50%);
+    font-weight:bold;color:#fff;background:rgba(0,0,0,.45);
+    border-radius:10px;padding:2px 10px;opacity:0;transition:opacity .2s;
+  }
+  .full.on{opacity:1}
 
-  .faucet-btns{display:flex;gap:12px;margin-top:6px}
+  .faucet-btns{display:flex;gap:12px;margin-top:8px}
   .faucet-btn{
     flex:1;padding:18px 8px;
     font-size:1.1rem;font-weight:bold;color:#fff;
@@ -151,58 +180,57 @@
   .hint{font-size:.78rem;color:var(--sub);text-align:center;margin-top:8px}
 
   /* 結果 */
+  .member{text-align:center;font-size:.95rem;color:var(--sub)}
+  .face{text-align:center;font-size:4.6rem;line-height:1.2}
+  .face.shake{animation:shake .5s}
+  .line{
+    text-align:center;font-size:1.25rem;font-weight:bold;
+    padding:10px;background:var(--tile);border-radius:12px;margin-top:4px;
+  }
   .big{
-    text-align:center;font-size:3rem;font-weight:bold;
-    font-variant-numeric:tabular-nums;line-height:1.2;
+    text-align:center;font-size:2.6rem;font-weight:bold;
+    font-variant-numeric:tabular-nums;line-height:1.2;margin-top:12px;
   }
-  .big small{font-size:1.2rem}
-  .diff{text-align:center;font-size:1rem;margin-top:2px}
-  .reaction{
-    text-align:center;font-size:1.05rem;margin-top:10px;
-    padding:10px;background:var(--tile);border-radius:12px;
-  }
-  .rank{
-    text-align:center;font-size:1.5rem;font-weight:bold;margin-top:6px;
-  }
-  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+  .big small{font-size:1.1rem}
+  .diff{text-align:center;font-size:.95rem;margin-top:2px;color:var(--sub)}
+  .note{text-align:center;font-size:.88rem;color:var(--warn);margin-top:4px}
+  .rank{text-align:center;font-size:1.5rem;font-weight:bold;margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.9rem}
   td{padding:6px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
   td:last-child{text-align:right}
-  footer{
-    text-align:center;font-size:.78rem;color:var(--sub);margin-top:22px;
-  }
+  footer{text-align:center;font-size:.78rem;color:var(--sub);margin-top:22px}
   footer a{color:var(--sub)}
-  .shake{animation:shake .4s}
   @keyframes shake{
     0%,100%{transform:translateX(0)}
-    25%{transform:translateX(-6px)}
-    75%{transform:translateX(6px)}
+    20%{transform:translateX(-10px) rotate(-4deg)}
+    40%{transform:translateX(10px) rotate(4deg)}
+    60%{transform:translateX(-8px)}
+    80%{transform:translateX(8px)}
   }
+  .shake-stage{animation:shake .4s}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>ジャスト41℃<small>お風呂の温度ぴったり合わせゲーム</small></h1>
+  <h1>ジャスト41℃<small>温度計のないお風呂を、41℃にしろ。</small></h1>
 
   <!-- タイトル画面 -->
   <section id="title">
     <div class="card">
       <h2>あそびかた</h2>
       <ul>
-        <li>🔥（お湯）と🧊（水）のボタンを<b>押している間だけ</b>お風呂にお湯が入ります。</li>
-        <li>浴槽がいっぱいになるまでに、水温をできるだけ<b>41.0℃</b>に近づけよう。</li>
-        <li>お湯と水の温度は、毎回ちょっとずつ違います。</li>
-        <li>3回勝負。誤差が小さいほどえらい！</li>
+        <li><b>温度計はありません。</b>頼れるのは「湯気」と「指で確かめる」（1回に3回まで）だけ。</li>
+        <li>🔥お湯と🧊水のボタンを<b>押している間だけ</b>出ます。お湯と水の温度は毎回ちがいます。</li>
+        <li>家族が来るまで<b>30秒</b>。その間に<b>給湯器のバグや猫の乱入</b>で、蛇口が勝手に開きます。</li>
+        <li>時間になったら家族が入ります。ぴったり<b>41℃</b>なら大満足、ずれると大さわぎ。</li>
+        <li>水位が60%未満だと、肩が出て減点です。</li>
       </ul>
-      <label class="toggle">
-        <input type="checkbox" id="hardMode">
-        <span>温度計をかくす（むずかしい）</span>
-      </label>
       <button class="btn-main" id="startBtn">お風呂をはじめる</button>
       <p id="bestText" style="margin-top:10px;text-align:center"></p>
     </div>
     <div class="card">
       <h2>このゲームについて</h2>
-      <p>「家族が入る前に、お風呂を41℃にしておいてほしい」という場面をゲームにしました。インストールも登録もいりません。スマホでもパソコンでも、ブラウザだけで遊べます。結果はXなどでシェアして、友だちと誤差を競ってみてください。</p>
+      <p>「家族が入る前に、お風呂を41℃にしておいて」という場面をゲームにしました。インストールも登録もいりません。スマホでもパソコンでも、ブラウザだけで遊べます。結果はXなどでシェアして、友だちと誤差を競ってみてください。</p>
     </div>
   </section>
 
@@ -210,36 +238,46 @@
   <section id="game" hidden>
     <div class="status">
       <div><span>ラウンド</span><b id="roundText">1/3</b></div>
+      <div><span>家族が来るまで</span><b id="timeText">30</b></div>
       <div><span>水位</span><b id="levelText">0%</b></div>
-      <div><span>水温</span><b id="tempText">--.-℃</b></div>
     </div>
-    <p class="target">めざす温度は <b>41.0℃</b></p>
+    <div class="timebar"><i id="timeBar"></i></div>
+    <p class="target">めざす温度は <b>41℃</b>（温度計はないよ）</p>
+    <div class="event" id="eventText"></div>
 
     <div class="stage" id="stage">
       <div class="faucet hot">🚰</div>
       <div class="faucet cold">🚰</div>
       <div class="stream hot" id="streamHot"></div>
       <div class="stream cold" id="streamCold"></div>
+      <div class="cat" id="cat">🐈</div>
+      <div class="bubble" id="bubble"></div>
+      <div class="finger" id="finger">👆</div>
+      <div class="steam" id="steam">♨️♨️♨️</div>
       <div class="tub">
-        <div class="water" id="water"><div class="steam" id="steam">♨️</div></div>
+        <div class="water" id="water"></div>
       </div>
+      <div class="full" id="fullText">満水！</div>
     </div>
 
     <div class="faucet-btns">
       <button class="faucet-btn hot" id="hotBtn">🔥 お湯<small>押している間 出る</small></button>
       <button class="faucet-btn cold" id="coldBtn">🧊 水<small>押している間 出る</small></button>
     </div>
-    <button class="btn-sub" id="enterBtn" disabled>水位50%から「入る！」でやめられるよ</button>
-    <p class="hint">パソコンなら H キー＝お湯、C キー＝水 でも操作できます</p>
+    <button class="btn-sub" id="fingerBtn">👆 指で確かめる（残り3回）</button>
+    <button class="btn-sub" id="callBtn">もう家族を呼ぶ</button>
+    <p class="hint">パソコンなら H キー＝お湯、C キー＝水、F キー＝指で確かめる</p>
   </section>
 
   <!-- ラウンド結果 -->
   <section id="result" hidden>
     <div class="card">
-      <h2 id="resultTitle">1回目の結果</h2>
+      <p class="member" id="resultMember"></p>
+      <div class="face" id="resultFace">😌</div>
+      <div class="line" id="resultLine"></div>
       <div class="big" id="resultTemp">41.0<small>℃</small></div>
       <div class="diff" id="resultDiff"></div>
-      <div class="reaction" id="resultReaction"></div>
+      <div class="note" id="resultNote"></div>
       <button class="btn-main" id="nextBtn">次のお風呂へ</button>
     </div>
   </section>
@@ -270,9 +308,20 @@
 
   var TARGET = 41;
   var ROUNDS = 3;
-  var RATE = 12;          // 蛇口1つあたりの水位上昇（%/秒）
-  var MIN_ENTER = 50;     // 「入る！」が押せる最低水位（%）
-  var BEST_KEY = "just41_best";
+  var TIME_LIMIT = 30;     // 家族が来るまでの秒数
+  var RATE = 5;            // 蛇口1つあたりの水位上昇（%/秒）
+  var MIN_LEVEL = 60;      // これ未満だと減点
+  var SHALLOW_PENALTY = 5; // 水位不足の減点（℃分）
+  var FINGER_TESTS = 3;
+  var FINGER_LOCK = 0.9;   // 指で確かめている間、蛇口が使えない秒数
+  var BEST_KEY = "just41_best_v2";
+
+  // テスト用：?speed=3 のようにすると時間が速く進む
+  var SPEED = 1;
+  try {
+    var m = /[?&]speed=(\d+(\.\d+)?)/.exec(location.search);
+    if (m) SPEED = Math.min(10, Math.max(1, parseFloat(m[1])));
+  } catch (e) {}
 
   var $ = function (id) { return document.getElementById(id); };
   var screens = { title: $("title"), game: $("game"), result: $("result"), final: $("final") };
@@ -282,35 +331,67 @@
     hot: 0, cold: 0,
     hotT: 65, coldT: 15,
     hotOn: false, coldOn: false,
+    autoHot: 0, autoCold: 0,   // 勝手に開いている残り秒数
+    elapsed: 0,
+    lockLeft: 0,
+    tests: FINGER_TESTS,
+    events: [],
     running: false,
     last: 0,
-    hard: false,
-    results: []   // { temp, err }
+    results: []   // { temp, err, level, member, face, line }
   };
-
-  // ベスト記録の保存は try/catch で囲んである（保存できない環境でもエラーにならない）
 
   function show(name) {
     Object.keys(screens).forEach(function (k) { screens[k].hidden = (k !== name); });
   }
-
   function rand(min, max) { return min + Math.random() * (max - min); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-  // ---------- ゲーム進行 ----------
-  function startRound() {
-    st.hot = 0; st.cold = 0;
-    // 両方を同じ量だけ入れても41℃にならないよう、毎回温度の幅を大きくしている
-    st.hotT = Math.round(rand(48, 80));
-    st.coldT = Math.round(rand(5, 20));
-    st.hotOn = false; st.coldOn = false;
-    st.running = true;
-    st.last = 0;
-    $("roundText").textContent = (st.round + 1) + "/" + ROUNDS;
-    updateView();
-    show("game");
-    requestAnimationFrame(loop);
+  // ---------- 邪魔イベント ----------
+  var EVENT_TYPES = [
+    { text: "🔧 給湯器がバグった！ お湯が勝手に出てる！", hot: 2.6, cold: 0 },
+    { text: "🐈 猫が蛇口を踏んだ！ 水が出てる！", hot: 0, cold: 2.6, cat: true },
+    { text: "👧 妹「ぬるいっ！」と勝手にお湯を足した！", hot: 2.2, cold: 0 },
+    { text: "👨 お父さん「熱いのは嫌だ」と勝手に水を足した！", hot: 0, cold: 2.2 }
+  ];
+
+  function planEvents() {
+    // 3つのイベントを、4秒以上あけてランダムな時刻に起こす
+    var types = EVENT_TYPES.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+    var times = [rand(4, 9), rand(12, 17), rand(20, 25)];
+    st.events = types.map(function (t, i) { return { at: times[i], type: t, done: false }; });
   }
 
+  function fireEvent(ev) {
+    ev.done = true;
+    var t = ev.type;
+    if (t.hot) st.autoHot = t.hot;
+    if (t.cold) st.autoCold = t.cold;
+    var box = $("eventText");
+    box.textContent = t.text;
+    box.classList.remove("pop");
+    void box.offsetWidth;
+    box.classList.add("pop");
+    var stage = $("stage");
+    stage.classList.remove("shake-stage");
+    void stage.offsetWidth;
+    stage.classList.add("shake-stage");
+    if (t.cat) {
+      var cat = $("cat");
+      cat.classList.remove("go");
+      cat.style.transition = "none";
+      cat.style.left = "-20%";
+      void cat.offsetWidth;
+      cat.style.transition = "";
+      cat.style.left = "";
+      cat.classList.add("go");
+    }
+    setTimeout(function () {
+      if (box.textContent === t.text) box.textContent = "";
+    }, 3200);
+  }
+
+  // ---------- ゲーム進行 ----------
   function level() { return st.hot + st.cold; }
   function temp() {
     var l = level();
@@ -318,19 +399,59 @@
     return (st.hot * st.hotT + st.cold * st.coldT) / l;
   }
 
+  function startRound() {
+    st.hot = 0; st.cold = 0;
+    // お湯と水の温度は毎回ちがう（両方を同じ量にしても41℃にはならない）
+    st.hotT = Math.round(rand(48, 80));
+    st.coldT = Math.round(rand(5, 20));
+    st.hotOn = false; st.coldOn = false;
+    st.autoHot = 0; st.autoCold = 0;
+    st.elapsed = 0;
+    st.lockLeft = 0;
+    st.tests = FINGER_TESTS;
+    st.running = true;
+    st.last = 0;
+    planEvents();
+    $("eventText").textContent = "";
+    $("bubble").classList.remove("on");
+    $("finger").classList.remove("on");
+    $("cat").classList.remove("go");
+    $("roundText").textContent = (st.round + 1) + "/" + ROUNDS;
+    updateView();
+    show("game");
+    requestAnimationFrame(loop);
+  }
+
   function loop(ts) {
     if (!st.running) return;
     if (!st.last) st.last = ts;
-    var dt = Math.min((ts - st.last) / 1000, 0.1);
+    var dt = Math.min((ts - st.last) / 1000, 0.1) * SPEED;
     st.last = ts;
 
-    var add = RATE * dt;
-    if (st.hotOn) st.hot += add;
-    if (st.coldOn) st.cold += add;
+    st.elapsed += dt;
+    if (st.lockLeft > 0) st.lockLeft = Math.max(0, st.lockLeft - dt);
 
-    if (level() >= 100) {
+    st.events.forEach(function (ev) {
+      if (!ev.done && st.elapsed >= ev.at) fireEvent(ev);
+    });
+
+    var add = RATE * dt;
+    var locked = st.lockLeft > 0;
+    var hotFlow = (st.hotOn && !locked) || st.autoHot > 0;
+    var coldFlow = (st.coldOn && !locked) || st.autoCold > 0;
+    if (st.autoHot > 0) st.autoHot = Math.max(0, st.autoHot - dt);
+    if (st.autoCold > 0) st.autoCold = Math.max(0, st.autoCold - dt);
+
+    st.flowHot = hotFlow && level() < 100;
+    st.flowCold = coldFlow && level() < 100;
+    if (st.flowHot) st.hot += add;
+    if (st.flowCold) st.cold += add;
+    if (level() > 100) {
       var k = 100 / level();
       st.hot *= k; st.cold *= k;
+    }
+
+    if (st.elapsed >= TIME_LIMIT) {
       finishRound();
       return;
     }
@@ -338,100 +459,153 @@
     requestAnimationFrame(loop);
   }
 
-  // 水温ごとの水の色（冷たい＝青 → 41℃付近＝うすいお湯色 → 熱い＝赤）
-  var COLOR_STOPS = [
-    [10, [90, 169, 255]],
-    [38, [143, 208, 255]],
-    [41, [255, 227, 176]],
-    [50, [255, 160, 112]],
-    [70, [255, 90, 60]]
-  ];
-  function waterColor(t) {
-    if (t === null) return "rgb(143,208,255)";
-    if (t <= COLOR_STOPS[0][0]) return "rgb(" + COLOR_STOPS[0][1].join(",") + ")";
-    for (var i = 1; i < COLOR_STOPS.length; i++) {
-      var a = COLOR_STOPS[i - 1], b = COLOR_STOPS[i];
-      if (t <= b[0]) {
-        var k = (t - a[0]) / (b[0] - a[0]);
-        var c = [0, 1, 2].map(function (j) { return Math.round(a[1][j] + (b[1][j] - a[1][j]) * k); });
-        return "rgb(" + c.join(",") + ")";
-      }
-    }
-    return "rgb(" + COLOR_STOPS[COLOR_STOPS.length - 1][1].join(",") + ")";
-  }
-
   function updateView() {
     var l = level();
     var t = temp();
+    var left = Math.max(0, TIME_LIMIT - st.elapsed);
     $("water").style.height = Math.min(l, 100) + "%";
     $("levelText").textContent = Math.floor(l) + "%";
-    if (st.hard) {
-      $("tempText").textContent = "??.?℃";
-      $("water").style.backgroundColor = "rgb(143,208,255)";
-      $("steam").style.opacity = 0;
-    } else {
-      $("tempText").textContent = t === null ? "--.-℃" : t.toFixed(1) + "℃";
-      $("water").style.backgroundColor = waterColor(t);
-      $("steam").style.opacity = (t !== null && t >= 45) ? 1 : 0;
-    }
-    $("streamHot").classList.toggle("on", st.hotOn);
-    $("streamCold").classList.toggle("on", st.coldOn);
+    $("timeText").textContent = Math.ceil(left);
+    var bar = $("timeBar");
+    bar.style.width = (left / TIME_LIMIT * 100) + "%";
+    bar.classList.toggle("low", left <= 8);
+
+    // 湯気：温度が高いほど濃い（でも正確には分からない）
+    var steam = 0;
+    if (t !== null && l > 5) steam = Math.max(0, Math.min(1, (t - 36) / 22));
+    $("steam").style.opacity = steam.toFixed(2);
+
+    $("streamHot").classList.toggle("on", !!st.flowHot);
+    $("streamCold").classList.toggle("on", !!st.flowCold);
     $("hotBtn").classList.toggle("pressed", st.hotOn);
     $("coldBtn").classList.toggle("pressed", st.coldOn);
+    $("fullText").classList.toggle("on", l >= 99.9);
 
-    var enterBtn = $("enterBtn");
-    if (l >= MIN_ENTER) {
-      enterBtn.disabled = false;
-      enterBtn.textContent = "入る！（ここで決定）";
-    } else {
-      enterBtn.disabled = true;
-      enterBtn.textContent = "水位" + MIN_ENTER + "%から「入る！」でやめられるよ";
+    var fb = $("fingerBtn");
+    fb.disabled = st.tests <= 0 || l < 3 || st.lockLeft > 0;
+    fb.textContent = "👆 指で確かめる（残り" + st.tests + "回）";
+  }
+
+  // ---------- 指で確かめる ----------
+  function fingerWord(t) {
+    if (t < 20) return "つ、つめたっ！！";
+    if (t < 32) return "つめたい";
+    if (t < 37) return "ぬるい";
+    if (t < 39.5) return "ややぬるい";
+    if (t < 42.5) return "ちょうどいい…かも？";
+    if (t < 45) return "ややあつい";
+    if (t < 50) return "あつい！";
+    return "あっっっつ！！";
+  }
+
+  var bubbleTimer = null;
+  function doFinger() {
+    if (!st.running || st.tests <= 0 || st.lockLeft > 0) return;
+    var t = temp();
+    if (t === null || level() < 3) return;
+    st.tests -= 1;
+    st.lockLeft = FINGER_LOCK;
+    // 人間の指は正確ではないので、少しだけゆらぐ
+    var felt = t + rand(-0.8, 0.8);
+    var b = $("bubble");
+    b.textContent = fingerWord(felt);
+    $("finger").classList.add("on");
+    b.classList.add("on");
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () {
+      $("finger").classList.remove("on");
+    }, FINGER_LOCK * 1000 / SPEED);
+    setTimeout(function () { b.classList.remove("on"); }, 2600 / Math.max(1, SPEED / 2));
+    updateView();
+  }
+
+  // ---------- 家族のリアクション ----------
+  var MEMBERS = [
+    { name: "お父さん", icon: "👨" },
+    { name: "お母さん", icon: "👩" },
+    { name: "妹", icon: "👧" },
+    { name: "おじいちゃん", icon: "👴" },
+    { name: "ねこ", icon: "🐈" }
+  ];
+
+  var LINES = {
+    perfect: ["ごくらく〜〜！ 完ぺきな湯加減", "これだよ、これ。今日一番の幸せ", "ふぅ…… 生き返った"],
+    good:    ["いい湯だな〜", "ちょうどいいよ、ありがとう", "うん、ほぼ最高"],
+    warm:    ["ちょっと熱いかな…", "足からそーっと入ります", "うっ、ぎりぎりセーフ"],
+    hot:     ["あっっつ！！ 何度にしたの！？", "ぎゃあああ！ ゆでダコになる！", "熱い熱い熱い！！"],
+    boil:    ["これ…お風呂じゃなくて鍋では？", "ほぼ沸騰してるよ！！", "命の危険を感じる！！"],
+    cool:    ["ちょっとぬるいかも…", "うーん、もうちょっと温かいのがいい", "入れるけど、ちょっと寒い"],
+    cold:    ["さむっっ！！ ふるえる…", "ぬるい！ 風邪ひくよ！", "ガタガタガタ…"],
+    ice:     ["これ、水風呂だよ！？", "氷が浮いてる気がする…", "修行ですか？ 滝行ですか？"]
+  };
+  var FACES = {
+    perfect: "😌", good: "🙂", warm: "😅", hot: "🥵", boil: "😱",
+    cool: "😐", cold: "🥶", ice: "🧊"
+  };
+  var CAT_LINES = {
+    perfect: "にゃ〜ん（極楽）", good: "にゃん（悪くない）", warm: "にゃっ…（ちょっと熱い）",
+    hot: "フシャーッ！！（熱い！）", boil: "ギャーッ！！（猫、逃走）",
+    cool: "にゃ…（ぬるい）", cold: "ミャッ（さむい）", ice: "シャーッ！！（猫、凍る）"
+  };
+
+  function categoryOf(t, err) {
+    if (err <= 0.5) return "perfect";
+    if (err <= 1.5) return "good";
+    if (t > TARGET) {
+      if (err <= 3) return "warm";
+      if (err <= 6) return "hot";
+      return "boil";
     }
+    if (err <= 3) return "cool";
+    if (err <= 6) return "cold";
+    return "ice";
   }
 
   function finishRound() {
     st.running = false;
     st.hotOn = false; st.coldOn = false;
+    st.flowHot = false; st.flowCold = false;
     updateView();
 
+    var l = level();
     var t = temp();
     if (t === null) t = 25;
-    var err = Math.abs(t - TARGET);
-    st.results.push({ temp: t, err: err });
+    var shallow = l < MIN_LEVEL;
+    var err = Math.abs(t - TARGET) + (shallow ? SHALLOW_PENALTY : 0);
 
-    $("resultTitle").textContent = (st.round + 1) + "回目の結果";
+    var cat = categoryOf(t, Math.abs(t - TARGET));
+    var member = pick(MEMBERS);
+    var line = member.name === "ねこ" ? CAT_LINES[cat] : pick(LINES[cat]);
+    var face = member.name === "ねこ" ? "🐈" : FACES[cat];
+    if (member.name === "ねこ" && (cat === "hot" || cat === "boil")) face = "🙀";
+    if (member.name === "ねこ" && cat === "perfect") face = "😸";
+
+    st.results.push({ temp: t, err: err, level: l, member: member.name, line: line, cat: cat, shallow: shallow });
+
+    $("resultMember").textContent = member.icon + " " + member.name + " が入りました";
+    var faceEl = $("resultFace");
+    faceEl.textContent = face;
+    faceEl.classList.remove("shake");
+    $("resultLine").textContent = "「" + line + "」";
     $("resultTemp").innerHTML = t.toFixed(1) + "<small>℃</small>";
     var sign = t > TARGET ? "高い" : (t < TARGET ? "低い" : "");
-    $("resultDiff").textContent = "41.0℃との差：" + err.toFixed(1) + "℃" + (sign ? "（" + sign + "）" : "");
-    $("resultReaction").textContent = reaction(t, err);
+    $("resultDiff").textContent = "41℃との差：" + Math.abs(t - TARGET).toFixed(1) + "℃" + (sign ? "（" + sign + "）" : "") +
+      "　／　お湯" + st.hotT + "℃・水" + st.coldT + "℃だった";
+    $("resultNote").textContent = shallow
+      ? "水位が" + Math.floor(l) + "%で肩が出てる… +" + SHALLOW_PENALTY + "℃の減点"
+      : "";
     $("nextBtn").textContent = (st.round + 1 >= ROUNDS) ? "最終結果を見る" : "次のお風呂へ";
     show("result");
-    if (err > 6) {
-      $("resultReaction").classList.remove("shake");
-      void $("resultReaction").offsetWidth;
-      $("resultReaction").classList.add("shake");
-    }
-  }
-
-  function reaction(t, err) {
-    if (err <= 0.2) return "👏 完ぺき！ 家族「ちょうどいい湯加減〜」";
-    if (err <= 0.7) return "😌 すばらしい。肩まで入ってため息が出るお湯";
-    if (err <= 1.5) return "🙂 いい湯だな。ほぼ文句なし";
-    if (t > TARGET) {
-      if (err <= 3) return "😅 ちょっと熱い。足からそっと入る感じ";
-      if (err <= 6) return "🥵 熱い！ お父さん「あっつ！！」";
-      return "🔥 もはや熱湯風呂。誰も入れません";
-    } else {
-      if (err <= 3) return "😅 ちょっとぬるい。もう少し足したいな";
-      if (err <= 6) return "🥶 ぬるい！ 家族「さむい…」";
-      return "🧊 氷風呂です。修行ですか？";
+    if (cat === "hot" || cat === "boil" || cat === "cold" || cat === "ice") {
+      void faceEl.offsetWidth;
+      faceEl.classList.add("shake");
     }
   }
 
   function rankOf(avg) {
-    if (avg <= 0.5) return "🏆 お風呂マスター";
-    if (avg <= 1.5) return "♨️ 湯加減の達人";
-    if (avg <= 3) return "🙂 家族に愛される人";
+    if (avg <= 0.8) return "🏆 お風呂マスター";
+    if (avg <= 1.8) return "♨️ 湯加減の達人";
+    if (avg <= 3.5) return "🙂 家族に愛される人";
     if (avg <= 6) return "😅 ときどき叫ばれる人";
     return "🔥 熱湯・氷風呂の魔王";
   }
@@ -448,20 +622,18 @@
 
     var html = "";
     st.results.forEach(function (r, i) {
-      html += "<tr><td>" + (i + 1) + "回目</td><td>" + r.temp.toFixed(1) + "℃</td><td>誤差 " + r.err.toFixed(1) + "℃</td></tr>";
+      html += "<tr><td>" + (i + 1) + "回目 " + r.member + "</td><td>" + r.temp.toFixed(1) + "℃</td><td>誤差 " + r.err.toFixed(1) + "℃</td></tr>";
     });
     $("finalTable").innerHTML = html;
 
-    var key = st.hard ? "hard" : "normal";
-    var bestText = "";
-    var bestKey = BEST_KEY + "_" + key;
     var bestVal = null;
     try {
-      var raw = localStorage.getItem(bestKey);
+      var raw = localStorage.getItem(BEST_KEY);
       bestVal = raw === null ? null : parseFloat(raw);
     } catch (e) {}
+    var bestText;
     if (bestVal === null || avg < bestVal) {
-      try { localStorage.setItem(bestKey, String(avg)); } catch (e) {}
+      try { localStorage.setItem(BEST_KEY, String(avg)); } catch (e) {}
       bestText = bestVal === null ? "ベストを記録しました" : "🎉 ベスト更新！（これまで " + bestVal.toFixed(1) + "℃）";
     } else {
       bestText = "ベスト：" + bestVal.toFixed(1) + "℃";
@@ -471,21 +643,20 @@
   }
 
   function shareText() {
-    var mode = st.hard ? "（温度計なし）" : "";
-    return "ジャスト41℃" + mode + " 平均の誤差 " + st.avg.toFixed(1) + "℃【" + st.rank.replace(/^\S+\s/, "") + "】 #ジャスト41度";
+    // いちばん誤差が大きかった回のセリフをのせる
+    var worst = st.results.slice().sort(function (a, b) { return b.err - a.err; })[0];
+    var scene = worst.member + "「" + worst.line + "」（" + worst.temp.toFixed(1) + "℃）";
+    return "ジャスト41℃ 平均の誤差 " + st.avg.toFixed(1) + "℃【" + st.rank.replace(/^\S+\s/, "") + "】\n" +
+           scene + "\n#ジャスト41度";
   }
 
   function updateBestOnTitle() {
-    var parts = [];
-    ["normal", "hard"].forEach(function (k) {
-      try {
-        var raw = localStorage.getItem(BEST_KEY + "_" + k);
-        if (raw !== null) {
-          parts.push((k === "hard" ? "温度計なし" : "ふつう") + "のベスト：" + parseFloat(raw).toFixed(1) + "℃");
-        }
-      } catch (e) {}
-    });
-    $("bestText").textContent = parts.join(" ／ ");
+    var text = "";
+    try {
+      var raw = localStorage.getItem(BEST_KEY);
+      if (raw !== null) text = "ベスト：平均の誤差 " + parseFloat(raw).toFixed(1) + "℃";
+    } catch (e) {}
+    $("bestText").textContent = text;
   }
 
   // ---------- 入力 ----------
@@ -506,32 +677,27 @@
     var k = e.key.toLowerCase();
     if (k === "h") { st.hotOn = true; updateView(); }
     if (k === "c") { st.coldOn = true; updateView(); }
+    if (k === "f") { doFinger(); }
   });
   window.addEventListener("keyup", function (e) {
     var k = e.key.toLowerCase();
     if (k === "h") { st.hotOn = false; updateView(); }
     if (k === "c") { st.coldOn = false; updateView(); }
   });
-  window.addEventListener("blur", function () {
-    st.hotOn = false; st.coldOn = false;
-  });
+  window.addEventListener("blur", function () { st.hotOn = false; st.coldOn = false; });
 
-  $("enterBtn").addEventListener("click", function () {
-    if (st.running && level() >= MIN_ENTER) finishRound();
-  });
+  $("fingerBtn").addEventListener("click", doFinger);
+  $("callBtn").addEventListener("click", function () { if (st.running) finishRound(); });
 
   $("startBtn").addEventListener("click", function () {
-    st.hard = $("hardMode").checked;
     st.round = 0;
     st.results = [];
     startRound();
   });
-
   $("nextBtn").addEventListener("click", function () {
     st.round += 1;
     if (st.round >= ROUNDS) { showFinal(); } else { startRound(); }
   });
-
   $("retryBtn").addEventListener("click", function () {
     updateBestOnTitle();
     show("title");
@@ -539,12 +705,12 @@
 
   $("shareBtn").addEventListener("click", function () {
     var url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText()) +
-              "&url=" + encodeURIComponent(location.href.split("#")[0]);
+              "&url=" + encodeURIComponent(location.href.split("?")[0].split("#")[0]);
     window.open(url, "_blank", "noopener");
   });
 
   $("copyBtn").addEventListener("click", function () {
-    var text = shareText() + " " + location.href.split("#")[0];
+    var text = shareText() + " " + location.href.split("?")[0].split("#")[0];
     var btn = $("copyBtn");
     function done(msg) {
       btn.textContent = msg;
