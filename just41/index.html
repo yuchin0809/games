@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ジャスト41℃｜お風呂の温度ぴったり合わせゲーム</title>
+<meta name="description" content="熱湯と水の蛇口だけで、お風呂をぴったり41℃にするゲーム。入れすぎると熱湯風呂や氷風呂に。3回勝負で、誤差の小さい人ほど湯加減マスター！">
+<meta property="og:title" content="ジャスト41℃｜お風呂の温度ぴったり合わせゲーム">
+<meta property="og:description" content="熱湯と水の蛇口だけで、お風呂をぴったり41℃にできる？ 入れすぎると熱湯風呂や氷風呂に！">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --bg:#fff7ec;
+    --ink:#3b2a20;
+    --sub:#7a6556;
+    --card:#ffffff;
+    --line:#ecd9c3;
+    --hot:#e8572e;
+    --cold:#2e8be8;
+    --ok:#2ea36b;
+    --tile:#f4efe8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+    line-height:1.6;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{
+    max-width:480px;
+    margin:0 auto;
+    padding:16px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  h1{font-size:1.6rem;text-align:center;letter-spacing:.02em}
+  h1 small{display:block;font-size:.8rem;color:var(--sub);font-weight:normal;margin-top:2px}
+  .card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:18px;
+    padding:16px;
+    margin-top:14px;
+  }
+  .card h2{font-size:1.05rem;margin-bottom:6px}
+  .card p, .card li{font-size:.92rem;color:var(--sub)}
+  .card ul{padding-left:1.2em}
+  button{
+    font:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:14px;
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+    touch-action:manipulation;
+  }
+  .btn-main{
+    display:block;width:100%;
+    padding:14px;
+    font-size:1.1rem;font-weight:bold;
+    color:#fff;background:var(--ok);
+    box-shadow:0 4px 0 #1f7a50;
+    margin-top:12px;
+  }
+  .btn-main:active{transform:translateY(3px);box-shadow:0 1px 0 #1f7a50}
+  .btn-main:disabled{background:#b9b0a6;box-shadow:0 4px 0 #988f85;cursor:not-allowed}
+  .btn-sub{
+    display:block;width:100%;
+    padding:12px;
+    font-size:1rem;
+    color:var(--ink);background:var(--tile);
+    margin-top:10px;
+  }
+  .toggle{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.92rem;color:var(--ink)}
+  .toggle input{width:20px;height:20px}
+  [hidden]{display:none !important}
+
+  /* ゲーム画面 */
+  .status{
+    display:flex;justify-content:space-between;gap:8px;
+    margin-top:12px;
+  }
+  .status div{
+    flex:1;text-align:center;
+    background:var(--card);border:2px solid var(--line);border-radius:14px;
+    padding:6px 4px;
+  }
+  .status span{display:block;font-size:.72rem;color:var(--sub)}
+  .status b{font-size:1.25rem;font-variant-numeric:tabular-nums}
+  .target{
+    text-align:center;margin-top:10px;font-size:.95rem;color:var(--sub);
+  }
+  .target b{color:var(--ok);font-size:1.1rem}
+
+  .stage{
+    position:relative;
+    height:280px;
+    margin-top:10px;
+  }
+  .tub{
+    position:absolute;left:8%;right:8%;bottom:0;height:200px;
+    border:6px solid #cfc3b6;
+    border-radius:16px 16px 60px 60px;
+    background:#fdfbf8;
+    overflow:hidden;
+  }
+  .water{
+    position:absolute;left:0;right:0;bottom:0;
+    height:0%;
+    background:hsl(200 70% 65%);
+    transition:background-color .15s linear;
+  }
+  .water::before{
+    content:"";position:absolute;left:0;right:0;top:-6px;height:12px;
+    background:inherit;
+    border-radius:50% 50% 0 0 / 100% 100% 0 0;
+    filter:brightness(1.1);
+  }
+  .water .steam{
+    position:absolute;top:-34px;left:0;right:0;text-align:center;
+    font-size:1.4rem;opacity:0;transition:opacity .3s;
+  }
+  .stream{
+    position:absolute;top:36px;width:14px;
+    height:0;border-radius:7px;
+    transition:height .12s linear;
+  }
+  .stream.hot{left:22%;background:#ff8f6b}
+  .stream.cold{right:22%;background:#6bb4ff}
+  .stream.on{height:150px}
+  .faucet{
+    position:absolute;top:0;font-size:2rem;
+  }
+  .faucet.hot{left:17%}
+  .faucet.cold{right:17%}
+  .faucet::after{
+    content:"";position:absolute;left:10px;top:30px;width:14px;height:12px;
+    background:#9aa4ad;border-radius:0 0 6px 6px;
+  }
+
+  .faucet-btns{display:flex;gap:12px;margin-top:6px}
+  .faucet-btn{
+    flex:1;padding:18px 8px;
+    font-size:1.1rem;font-weight:bold;color:#fff;
+  }
+  .faucet-btn small{display:block;font-size:.72rem;font-weight:normal;opacity:.9}
+  .faucet-btn.hot{background:var(--hot);box-shadow:0 5px 0 #a93b1b}
+  .faucet-btn.cold{background:var(--cold);box-shadow:0 5px 0 #1f64ad}
+  .faucet-btn.pressed{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .hint{font-size:.78rem;color:var(--sub);text-align:center;margin-top:8px}
+
+  /* 結果 */
+  .big{
+    text-align:center;font-size:3rem;font-weight:bold;
+    font-variant-numeric:tabular-nums;line-height:1.2;
+  }
+  .big small{font-size:1.2rem}
+  .diff{text-align:center;font-size:1rem;margin-top:2px}
+  .reaction{
+    text-align:center;font-size:1.05rem;margin-top:10px;
+    padding:10px;background:var(--tile);border-radius:12px;
+  }
+  .rank{
+    text-align:center;font-size:1.5rem;font-weight:bold;margin-top:6px;
+  }
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem}
+  td{padding:6px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  td:last-child{text-align:right}
+  footer{
+    text-align:center;font-size:.78rem;color:var(--sub);margin-top:22px;
+  }
+  footer a{color:var(--sub)}
+  .shake{animation:shake .4s}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    75%{transform:translateX(6px)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ジャスト41℃<small>お風呂の温度ぴったり合わせゲーム</small></h1>
+
+  <!-- タイトル画面 -->
+  <section id="title">
+    <div class="card">
+      <h2>あそびかた</h2>
+      <ul>
+        <li>🔥（お湯）と🧊（水）のボタンを<b>押している間だけ</b>お風呂にお湯が入ります。</li>
+        <li>浴槽がいっぱいになるまでに、水温をできるだけ<b>41.0℃</b>に近づけよう。</li>
+        <li>お湯と水の温度は、毎回ちょっとずつ違います。</li>
+        <li>3回勝負。誤差が小さいほどえらい！</li>
+      </ul>
+      <label class="toggle">
+        <input type="checkbox" id="hardMode">
+        <span>温度計をかくす（むずかしい）</span>
+      </label>
+      <button class="btn-main" id="startBtn">お風呂をはじめる</button>
+      <p id="bestText" style="margin-top:10px;text-align:center"></p>
+    </div>
+    <div class="card">
+      <h2>このゲームについて</h2>
+      <p>「家族が入る前に、お風呂を41℃にしておいてほしい」という場面をゲームにしました。インストールも登録もいりません。スマホでもパソコンでも、ブラウザだけで遊べます。結果はXなどでシェアして、友だちと誤差を競ってみてください。</p>
+    </div>
+  </section>
+
+  <!-- ゲーム画面 -->
+  <section id="game" hidden>
+    <div class="status">
+      <div><span>ラウンド</span><b id="roundText">1/3</b></div>
+      <div><span>水位</span><b id="levelText">0%</b></div>
+      <div><span>水温</span><b id="tempText">--.-℃</b></div>
+    </div>
+    <p class="target">めざす温度は <b>41.0℃</b></p>
+
+    <div class="stage" id="stage">
+      <div class="faucet hot">🚰</div>
+      <div class="faucet cold">🚰</div>
+      <div class="stream hot" id="streamHot"></div>
+      <div class="stream cold" id="streamCold"></div>
+      <div class="tub">
+        <div class="water" id="water"><div class="steam" id="steam">♨️</div></div>
+      </div>
+    </div>
+
+    <div class="faucet-btns">
+      <button class="faucet-btn hot" id="hotBtn">🔥 お湯<small>押している間 出る</small></button>
+      <button class="faucet-btn cold" id="coldBtn">🧊 水<small>押している間 出る</small></button>
+    </div>
+    <button class="btn-sub" id="enterBtn" disabled>水位50%から「入る！」でやめられるよ</button>
+    <p class="hint">パソコンなら H キー＝お湯、C キー＝水 でも操作できます</p>
+  </section>
+
+  <!-- ラウンド結果 -->
+  <section id="result" hidden>
+    <div class="card">
+      <h2 id="resultTitle">1回目の結果</h2>
+      <div class="big" id="resultTemp">41.0<small>℃</small></div>
+      <div class="diff" id="resultDiff"></div>
+      <div class="reaction" id="resultReaction"></div>
+      <button class="btn-main" id="nextBtn">次のお風呂へ</button>
+    </div>
+  </section>
+
+  <!-- 最終結果 -->
+  <section id="final" hidden>
+    <div class="card">
+      <h2>最終結果</h2>
+      <div class="rank" id="finalRank"></div>
+      <div class="big" id="finalAvg">0.0<small>℃</small></div>
+      <div class="diff">3回の平均の誤差</div>
+      <table id="finalTable"></table>
+      <p id="finalBest" style="text-align:center;margin-top:10px"></p>
+      <button class="btn-main" id="shareBtn">Xでシェアする</button>
+      <button class="btn-sub" id="copyBtn">結果をコピーする</button>
+      <button class="btn-sub" id="retryBtn">もう一回あそぶ</button>
+    </div>
+  </section>
+
+  <footer>
+    <a href="../">ほかのゲームを見る</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var TARGET = 41;
+  var ROUNDS = 3;
+  var RATE = 12;          // 蛇口1つあたりの水位上昇（%/秒）
+  var MIN_ENTER = 50;     // 「入る！」が押せる最低水位（%）
+  var BEST_KEY = "just41_best";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = { title: $("title"), game: $("game"), result: $("result"), final: $("final") };
+
+  var st = {
+    round: 0,
+    hot: 0, cold: 0,
+    hotT: 65, coldT: 15,
+    hotOn: false, coldOn: false,
+    running: false,
+    last: 0,
+    hard: false,
+    results: []   // { temp, err }
+  };
+
+  // ベスト記録の保存は try/catch で囲んである（保存できない環境でもエラーにならない）
+
+  function show(name) {
+    Object.keys(screens).forEach(function (k) { screens[k].hidden = (k !== name); });
+  }
+
+  function rand(min, max) { return min + Math.random() * (max - min); }
+
+  // ---------- ゲーム進行 ----------
+  function startRound() {
+    st.hot = 0; st.cold = 0;
+    // 両方を同じ量だけ入れても41℃にならないよう、毎回温度の幅を大きくしている
+    st.hotT = Math.round(rand(48, 80));
+    st.coldT = Math.round(rand(5, 20));
+    st.hotOn = false; st.coldOn = false;
+    st.running = true;
+    st.last = 0;
+    $("roundText").textContent = (st.round + 1) + "/" + ROUNDS;
+    updateView();
+    show("game");
+    requestAnimationFrame(loop);
+  }
+
+  function level() { return st.hot + st.cold; }
+  function temp() {
+    var l = level();
+    if (l <= 0) return null;
+    return (st.hot * st.hotT + st.cold * st.coldT) / l;
+  }
+
+  function loop(ts) {
+    if (!st.running) return;
+    if (!st.last) st.last = ts;
+    var dt = Math.min((ts - st.last) / 1000, 0.1);
+    st.last = ts;
+
+    var add = RATE * dt;
+    if (st.hotOn) st.hot += add;
+    if (st.coldOn) st.cold += add;
+
+    if (level() >= 100) {
+      var k = 100 / level();
+      st.hot *= k; st.cold *= k;
+      finishRound();
+      return;
+    }
+    updateView();
+    requestAnimationFrame(loop);
+  }
+
+  // 水温ごとの水の色（冷たい＝青 → 41℃付近＝うすいお湯色 → 熱い＝赤）
+  var COLOR_STOPS = [
+    [10, [90, 169, 255]],
+    [38, [143, 208, 255]],
+    [41, [255, 227, 176]],
+    [50, [255, 160, 112]],
+    [70, [255, 90, 60]]
+  ];
+  function waterColor(t) {
+    if (t === null) return "rgb(143,208,255)";
+    if (t <= COLOR_STOPS[0][0]) return "rgb(" + COLOR_STOPS[0][1].join(",") + ")";
+    for (var i = 1; i < COLOR_STOPS.length; i++) {
+      var a = COLOR_STOPS[i - 1], b = COLOR_STOPS[i];
+      if (t <= b[0]) {
+        var k = (t - a[0]) / (b[0] - a[0]);
+        var c = [0, 1, 2].map(function (j) { return Math.round(a[1][j] + (b[1][j] - a[1][j]) * k); });
+        return "rgb(" + c.join(",") + ")";
+      }
+    }
+    return "rgb(" + COLOR_STOPS[COLOR_STOPS.length - 1][1].join(",") + ")";
+  }
+
+  function updateView() {
+    var l = level();
+    var t = temp();
+    $("water").style.height = Math.min(l, 100) + "%";
+    $("levelText").textContent = Math.floor(l) + "%";
+    if (st.hard) {
+      $("tempText").textContent = "??.?℃";
+      $("water").style.backgroundColor = "rgb(143,208,255)";
+      $("steam").style.opacity = 0;
+    } else {
+      $("tempText").textContent = t === null ? "--.-℃" : t.toFixed(1) + "℃";
+      $("water").style.backgroundColor = waterColor(t);
+      $("steam").style.opacity = (t !== null && t >= 45) ? 1 : 0;
+    }
+    $("streamHot").classList.toggle("on", st.hotOn);
+    $("streamCold").classList.toggle("on", st.coldOn);
+    $("hotBtn").classList.toggle("pressed", st.hotOn);
+    $("coldBtn").classList.toggle("pressed", st.coldOn);
+
+    var enterBtn = $("enterBtn");
+    if (l >= MIN_ENTER) {
+      enterBtn.disabled = false;
+      enterBtn.textContent = "入る！（ここで決定）";
+    } else {
+      enterBtn.disabled = true;
+      enterBtn.textContent = "水位" + MIN_ENTER + "%から「入る！」でやめられるよ";
+    }
+  }
+
+  function finishRound() {
+    st.running = false;
+    st.hotOn = false; st.coldOn = false;
+    updateView();
+
+    var t = temp();
+    if (t === null) t = 25;
+    var err = Math.abs(t - TARGET);
+    st.results.push({ temp: t, err: err });
+
+    $("resultTitle").textContent = (st.round + 1) + "回目の結果";
+    $("resultTemp").innerHTML = t.toFixed(1) + "<small>℃</small>";
+    var sign = t > TARGET ? "高い" : (t < TARGET ? "低い" : "");
+    $("resultDiff").textContent = "41.0℃との差：" + err.toFixed(1) + "℃" + (sign ? "（" + sign + "）" : "");
+    $("resultReaction").textContent = reaction(t, err);
+    $("nextBtn").textContent = (st.round + 1 >= ROUNDS) ? "最終結果を見る" : "次のお風呂へ";
+    show("result");
+    if (err > 6) {
+      $("resultReaction").classList.remove("shake");
+      void $("resultReaction").offsetWidth;
+      $("resultReaction").classList.add("shake");
+    }
+  }
+
+  function reaction(t, err) {
+    if (err <= 0.2) return "👏 完ぺき！ 家族「ちょうどいい湯加減〜」";
+    if (err <= 0.7) return "😌 すばらしい。肩まで入ってため息が出るお湯";
+    if (err <= 1.5) return "🙂 いい湯だな。ほぼ文句なし";
+    if (t > TARGET) {
+      if (err <= 3) return "😅 ちょっと熱い。足からそっと入る感じ";
+      if (err <= 6) return "🥵 熱い！ お父さん「あっつ！！」";
+      return "🔥 もはや熱湯風呂。誰も入れません";
+    } else {
+      if (err <= 3) return "😅 ちょっとぬるい。もう少し足したいな";
+      if (err <= 6) return "🥶 ぬるい！ 家族「さむい…」";
+      return "🧊 氷風呂です。修行ですか？";
+    }
+  }
+
+  function rankOf(avg) {
+    if (avg <= 0.5) return "🏆 お風呂マスター";
+    if (avg <= 1.5) return "♨️ 湯加減の達人";
+    if (avg <= 3) return "🙂 家族に愛される人";
+    if (avg <= 6) return "😅 ときどき叫ばれる人";
+    return "🔥 熱湯・氷風呂の魔王";
+  }
+
+  function showFinal() {
+    var sum = 0;
+    st.results.forEach(function (r) { sum += r.err; });
+    var avg = sum / st.results.length;
+    st.avg = avg;
+    st.rank = rankOf(avg);
+
+    $("finalRank").textContent = st.rank;
+    $("finalAvg").innerHTML = avg.toFixed(1) + "<small>℃</small>";
+
+    var html = "";
+    st.results.forEach(function (r, i) {
+      html += "<tr><td>" + (i + 1) + "回目</td><td>" + r.temp.toFixed(1) + "℃</td><td>誤差 " + r.err.toFixed(1) + "℃</td></tr>";
+    });
+    $("finalTable").innerHTML = html;
+
+    var key = st.hard ? "hard" : "normal";
+    var bestText = "";
+    var bestKey = BEST_KEY + "_" + key;
+    var bestVal = null;
+    try {
+      var raw = localStorage.getItem(bestKey);
+      bestVal = raw === null ? null : parseFloat(raw);
+    } catch (e) {}
+    if (bestVal === null || avg < bestVal) {
+      try { localStorage.setItem(bestKey, String(avg)); } catch (e) {}
+      bestText = bestVal === null ? "ベストを記録しました" : "🎉 ベスト更新！（これまで " + bestVal.toFixed(1) + "℃）";
+    } else {
+      bestText = "ベスト：" + bestVal.toFixed(1) + "℃";
+    }
+    $("finalBest").textContent = bestText;
+    show("final");
+  }
+
+  function shareText() {
+    var mode = st.hard ? "（温度計なし）" : "";
+    return "ジャスト41℃" + mode + " 平均の誤差 " + st.avg.toFixed(1) + "℃【" + st.rank.replace(/^\S+\s/, "") + "】 #ジャスト41度";
+  }
+
+  function updateBestOnTitle() {
+    var parts = [];
+    ["normal", "hard"].forEach(function (k) {
+      try {
+        var raw = localStorage.getItem(BEST_KEY + "_" + k);
+        if (raw !== null) {
+          parts.push((k === "hard" ? "温度計なし" : "ふつう") + "のベスト：" + parseFloat(raw).toFixed(1) + "℃");
+        }
+      } catch (e) {}
+    });
+    $("bestText").textContent = parts.join(" ／ ");
+  }
+
+  // ---------- 入力 ----------
+  function bindHold(btn, key) {
+    function on(e) { if (e.cancelable) e.preventDefault(); if (st.running) { st[key] = true; updateView(); } }
+    function off() { if (st[key]) { st[key] = false; updateView(); } }
+    btn.addEventListener("pointerdown", on);
+    btn.addEventListener("pointerup", off);
+    btn.addEventListener("pointercancel", off);
+    btn.addEventListener("pointerleave", off);
+    btn.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  }
+  bindHold($("hotBtn"), "hotOn");
+  bindHold($("coldBtn"), "coldOn");
+
+  window.addEventListener("keydown", function (e) {
+    if (!st.running || e.repeat) return;
+    var k = e.key.toLowerCase();
+    if (k === "h") { st.hotOn = true; updateView(); }
+    if (k === "c") { st.coldOn = true; updateView(); }
+  });
+  window.addEventListener("keyup", function (e) {
+    var k = e.key.toLowerCase();
+    if (k === "h") { st.hotOn = false; updateView(); }
+    if (k === "c") { st.coldOn = false; updateView(); }
+  });
+  window.addEventListener("blur", function () {
+    st.hotOn = false; st.coldOn = false;
+  });
+
+  $("enterBtn").addEventListener("click", function () {
+    if (st.running && level() >= MIN_ENTER) finishRound();
+  });
+
+  $("startBtn").addEventListener("click", function () {
+    st.hard = $("hardMode").checked;
+    st.round = 0;
+    st.results = [];
+    startRound();
+  });
+
+  $("nextBtn").addEventListener("click", function () {
+    st.round += 1;
+    if (st.round >= ROUNDS) { showFinal(); } else { startRound(); }
+  });
+
+  $("retryBtn").addEventListener("click", function () {
+    updateBestOnTitle();
+    show("title");
+  });
+
+  $("shareBtn").addEventListener("click", function () {
+    var url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText()) +
+              "&url=" + encodeURIComponent(location.href.split("#")[0]);
+    window.open(url, "_blank", "noopener");
+  });
+
+  $("copyBtn").addEventListener("click", function () {
+    var text = shareText() + " " + location.href.split("#")[0];
+    var btn = $("copyBtn");
+    function done(msg) {
+      btn.textContent = msg;
+      setTimeout(function () { btn.textContent = "結果をコピーする"; }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done("コピーしました！"); },
+                                               function () { done("コピーできませんでした"); });
+    } else {
+      done("コピーできませんでした");
+    }
+  });
+
+  updateBestOnTitle();
+})();
+</script>
+</body>
+</html>
