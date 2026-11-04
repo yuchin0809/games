@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>謝罪会見シミュレーター｜社長になって記者会見を乗り切れ</title>
+<meta name="description" content="あなたは不祥事を起こした社長。お辞儀の角度を決めて、記者の質問に答えて、会見を乗り切ろう。怒れる記者・心配する記者・ネタ探しの記者で、正解の返事がちがう！">
+<meta property="og:title" content="謝罪会見シミュレーター｜社長になって記者会見を乗り切れ">
+<meta property="og:description" content="毎回ちがうふざけた不祥事。お辞儀と受け答えで、世間の怒りを抑えられる？">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --bg:#f3f1ee;
+    --ink:#262626;
+    --sub:#6b6560;
+    --card:#ffffff;
+    --line:#dcd6cf;
+    --navy:#1f3a5f;
+    --ok:#2ea36b;
+    --warn:#d93a3a;
+    --tile:#efebe6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+    line-height:1.6;
+    -webkit-tap-highlight-color:transparent;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+  h1{font-size:1.5rem;text-align:center;letter-spacing:.02em}
+  h1 small{display:block;font-size:.8rem;color:var(--sub);font-weight:normal;margin-top:2px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px;margin-top:14px}
+  .card h2{font-size:1.05rem;margin-bottom:6px}
+  .card p,.card li{font-size:.92rem;color:var(--sub)}
+  .card ul{padding-left:1.2em}
+  .card li{margin-top:4px}
+  button{
+    font:inherit;cursor:pointer;border:none;border-radius:14px;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
+  }
+  .btn-main{
+    display:block;width:100%;padding:14px;font-size:1.1rem;font-weight:bold;
+    color:#fff;background:var(--navy);box-shadow:0 4px 0 #11243d;margin-top:12px;
+  }
+  .btn-main:active{transform:translateY(3px);box-shadow:0 1px 0 #11243d}
+  .btn-sub{display:block;width:100%;padding:12px;font-size:1rem;color:var(--ink);background:var(--tile);margin-top:10px}
+  [hidden]{display:none !important}
+
+  /* 怒りゲージ */
+  .anger{margin-top:12px}
+  .anger .row{display:flex;justify-content:space-between;align-items:baseline;font-size:.8rem;color:var(--sub)}
+  .anger b{font-size:1.2rem;color:var(--ink);font-variant-numeric:tabular-nums}
+  .bar{height:16px;border-radius:8px;background:var(--line);overflow:hidden;margin-top:4px;position:relative}
+  .bar i{display:block;height:100%;width:40%;background:var(--ok);transition:width .5s, background-color .5s}
+  .bar i.mid{background:#e6a117}
+  .bar i.high{background:var(--warn)}
+  .delta{
+    position:absolute;right:6px;top:-1px;font-size:.78rem;font-weight:bold;color:#fff;
+    opacity:0;transition:opacity .2s;
+  }
+  .delta.on{opacity:1}
+
+  .case{
+    margin-top:12px;padding:10px 12px;border-radius:12px;background:#fff;border:2px solid var(--line);
+    font-size:.88rem;text-align:center;
+  }
+  .case b{display:block;font-size:.98rem;margin-top:2px}
+
+  /* お辞儀 */
+  .podium{
+    position:relative;height:210px;margin-top:10px;border-radius:14px;
+    background:linear-gradient(#26364d,#1b2738);overflow:hidden;
+  }
+  .person{
+    position:absolute;left:50%;bottom:26px;margin-left:-40px;width:80px;text-align:center;
+    font-size:4.6rem;line-height:1;transform-origin:50% 100%;
+  }
+  .floor{position:absolute;left:0;right:0;bottom:0;height:26px;background:#3c2f26}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  .flash.go{animation:flash .5s}
+  @keyframes flash{0%{opacity:.9}100%{opacity:0}}
+  .angle-box{margin-top:10px}
+  .angle-box .row{display:flex;justify-content:space-between;font-size:.82rem;color:var(--sub)}
+  .angle-box b{font-variant-numeric:tabular-nums;color:var(--ink)}
+  .angle-bar{height:22px;border-radius:11px;background:var(--line);position:relative;overflow:hidden;margin-top:4px}
+  .angle-bar i{display:block;height:100%;width:0;background:var(--navy)}
+  .angle-bar em{position:absolute;top:0;bottom:0;width:4px;background:var(--ok);margin-left:-2px}
+  .bow-btn{
+    display:block;width:100%;padding:22px 10px;margin-top:12px;font-size:1.15rem;font-weight:bold;
+    color:#fff;background:var(--navy);box-shadow:0 5px 0 #11243d;
+  }
+  .bow-btn.pressed{transform:translateY(4px);box-shadow:0 1px 0 #11243d}
+  .bow-msg{
+    min-height:3.2em;margin-top:10px;text-align:center;font-weight:bold;font-size:1rem;
+  }
+
+  /* 質問 */
+  .reporter{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .reporter .icon{font-size:2.8rem;line-height:1}
+  .reporter .talk{
+    flex:1;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:8px 12px;
+    font-weight:bold;font-size:.98rem;position:relative;
+  }
+  .reporter .who{display:block;font-size:.72rem;color:var(--sub);font-weight:normal}
+  .qinfo{display:flex;justify-content:space-between;font-size:.8rem;color:var(--sub);margin-top:10px}
+  .timer{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:4px}
+  .timer i{display:block;height:100%;width:100%;background:var(--navy)}
+  .timer i.low{background:var(--warn)}
+  .opt{
+    display:block;width:100%;text-align:left;padding:12px 14px;margin-top:10px;
+    font-size:.98rem;color:var(--ink);background:#fff;border:2px solid var(--line);
+  }
+  .opt:active{background:var(--tile)}
+  .opt:disabled{opacity:.5}
+  .react{
+    min-height:3em;margin-top:10px;text-align:center;font-weight:bold;
+  }
+
+  /* 結果 */
+  .paper{
+    background:#fbf8f1;border:2px solid #cfc6b3;border-radius:6px;padding:12px;margin-top:10px;text-align:center;
+    font-family:"Hiragino Mincho ProN","Noto Serif JP","Yu Mincho",serif;
+  }
+  .paper small{display:block;font-size:.72rem;color:var(--sub);font-family:system-ui,sans-serif}
+  .paper b{font-size:1.2rem;display:block;margin-top:2px;line-height:1.4}
+  .rank{text-align:center;font-size:1.45rem;font-weight:bold;margin-top:10px}
+  .big{text-align:center;font-size:2.4rem;font-weight:bold;font-variant-numeric:tabular-nums;line-height:1.2}
+  .big small{font-size:1rem}
+  .sub{text-align:center;font-size:.88rem;color:var(--sub)}
+  .tweets{margin-top:12px}
+  .tweet{background:var(--tile);border-radius:12px;padding:8px 12px;margin-top:8px;font-size:.9rem}
+  .tweet i{display:block;font-style:normal;font-size:.74rem;color:var(--sub)}
+  footer{text-align:center;font-size:.76rem;color:var(--sub);margin-top:22px}
+  footer a{color:var(--sub)}
+  .shake{animation:shake .45s}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-6px)}
+    80%{transform:translateX(6px)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>謝罪会見シミュレーター<small>社長になって、記者会見を乗り切れ。</small></h1>
+
+  <!-- タイトル -->
+  <section id="title">
+    <div class="card">
+      <h2>あそびかた</h2>
+      <ul>
+        <li>あなたは不祥事を起こした社長。<b>毎回ちがうふざけた不祥事</b>で、記者会見に出ます。</li>
+        <li>まず<b>お辞儀</b>。ボタンを押し続けて頭を下げ、ちょうどいい角度で離します。</li>
+        <li>つぎに記者の質問に、制限時間内に答えます。記者は3タイプ。<b>タイプによって、効く返事がちがいます。</b></li>
+        <li>記者の追及は続くので、質問のたびに<b>怒りが少しずつ増えます</b>。うまく答えて、増えるのを抑えよう。</li>
+        <li>ただし<b>前の質問と同じ返事</b>を続けると、「さっきも聞いた」と大きく怒られます。</li>
+        <li>世間の怒りが<b>100%になったら辞任</b>。最後に新聞の見出しとSNSの反応が出ます。</li>
+      </ul>
+      <button class="btn-main" id="startBtn">会見場に入る</button>
+    </div>
+    <div class="card">
+      <h2>このゲームについて</h2>
+      <p>登場する会社・人物・出来事はすべてフィクションです。実在のものとは関係ありません。インストールも登録もいりません。結果の見出しをシェアして、友だちと「どこまで耐えられるか」を競ってみてください。</p>
+    </div>
+  </section>
+
+  <!-- お辞儀 -->
+  <section id="bow" hidden>
+    <div class="case">
+      <span id="companyText"></span>
+      <b id="incidentText"></b>
+    </div>
+    <div class="anger">
+      <div class="row"><span>世間の怒り</span><b id="angerNum1">40%</b></div>
+      <div class="bar"><i id="angerBar1"></i></div>
+    </div>
+    <div class="podium" id="podium">
+      <div class="person" id="person">🧑‍💼</div>
+      <div class="floor"></div>
+      <div class="flash" id="flash"></div>
+    </div>
+    <div class="angle-box">
+      <div class="row"><span>お辞儀の角度（<b id="targetHint"></b>がちょうどいい）</span><b id="angleText">0°</b></div>
+      <div class="angle-bar"><i id="angleFill"></i><em id="targetTick"></em></div>
+    </div>
+    <button class="bow-btn" id="bowBtn">押し続けて頭を下げる（離して決定）</button>
+    <div class="bow-msg" id="bowMsg"></div>
+    <button class="btn-main" id="toQBtn" hidden>記者の質問へ</button>
+  </section>
+
+  <!-- 質問 -->
+  <section id="qa" hidden>
+    <div class="anger">
+      <div class="row"><span>世間の怒り</span><b id="angerNum2">40%</b></div>
+      <div class="bar"><i id="angerBar2"></i><span class="delta" id="delta"></span></div>
+    </div>
+    <div class="qinfo"><span id="qNo">質問 1/4</span><span id="qTime">7</span></div>
+    <div class="timer"><i id="timerBar"></i></div>
+    <div class="reporter">
+      <div class="icon" id="repIcon">😡</div>
+      <div class="talk"><span class="who" id="repWho"></span><span id="repLine"></span></div>
+    </div>
+    <div id="opts"></div>
+    <div class="react" id="react"></div>
+  </section>
+
+  <!-- 結果 -->
+  <section id="end" hidden>
+    <div class="card">
+      <div class="paper">
+        <small id="paperSub">号外</small>
+        <b id="headline"></b>
+      </div>
+      <div class="rank" id="endRank"></div>
+      <div class="big" id="endAnger">0<small>%</small></div>
+      <div class="sub">最終的な世間の怒り</div>
+      <div class="tweets" id="tweets"></div>
+      <button class="btn-main" id="shareBtn">Xでシェアする</button>
+      <button class="btn-sub" id="copyBtn">結果をコピーする</button>
+      <button class="btn-sub" id="retryBtn">もう一回（べつの不祥事）</button>
+    </div>
+  </section>
+
+  <footer>
+    <div>※ すべてフィクションです。</div>
+    <div style="margin-top:6px"><a href="../">ほかのゲームを見る</a></div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var QUESTIONS = 4;
+  var TIMES = [7, 6, 5, 5];   // 質問ごとの制限時間（秒）
+  var TIMEOUT_DELTA = 35;     // 時間切れ（沈黙）の増加
+  var REACT_MS = 1700;        // 記者の反応を見せる時間
+  var SAME_ANSWER_PENALTY = 22; // 前の質問と同じ返事を選んだときの増加
+  var PRESSURE = 10;            // 記者の追及は続く：質問に答えるたびに増える怒り
+
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = { title: $("title"), bow: $("bow"), qa: $("qa"), end: $("end") };
+  function show(name) { Object.keys(screens).forEach(function (k) { screens[k].hidden = (k !== name); }); }
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // ---------- データ ----------
+  var COMPANIES = ["ふわふわ食品", "ぴかぴか銀行", "もちもち鉄道", "ごろごろ電機", "ほかほか不動産", "どんどん運送"];
+  var INCIDENTS = [
+    { text: "社員食堂のカレーに、全部プリンを入れていた", stars: 2 },
+    { text: "全社員の机に、無言で観葉植物を置き続けていた", stars: 1 },
+    { text: "社内メールの語尾を、勝手に全部「ござる」にした", stars: 1 },
+    { text: "会議室の椅子を、毎晩1脚ずつ減らしていた", stars: 2 },
+    { text: "お客様の傘を、365日間まちがえて持ち帰っていた", stars: 3 },
+    { text: "新商品「辛くないカレー」が、実は激辛だった", stars: 3 },
+    { text: "社長の飼い猫が、全社員のメールを既読にしていた", stars: 2 },
+    { text: "エレベーターのボタンを、ぜんぶ「屋上」にしていた", stars: 2 },
+    { text: "社歌のサビを、こっそり社長の好きな歌に差し替えていた", stars: 1 },
+    { text: "全商品の賞味期限を、気分で書いていた", stars: 3 }
+  ];
+  var STAR_LABEL = { 1: "軽め", 2: "ふつう", 3: "深め" };
+
+  var REPORTERS = {
+    angry: {
+      icon: "😡", who: "怒れる記者",
+      lines: ["経緯を説明しろ！", "なぜこんなことをした！", "お客様に何と説明するんだ！"]
+    },
+    kind: {
+      icon: "🥺", who: "心配する記者",
+      lines: ["社員の方々の気持ちを、考えたことはありますか…？", "ご自身の言葉で、お願いします…", "本当に、反省していますか？"]
+    },
+    meme: {
+      icon: "🤳", who: "ネタ探しの記者",
+      lines: ["で、本心では面白いと思ってやりました？", "SNSで話題ですが、ご感想を一言！", "今、ちょっと伸びそうなコメントをお願いします！"]
+    }
+  };
+
+  var OPTIONS = [
+    { id: "sincere", text: "全て私の責任です。申し訳ございません" },
+    { id: "explain", text: "経緯を整理して、ご説明いたします" },
+    { id: "escape",  text: "記憶にございません" },
+    { id: "joke",    text: "ここだけの話、ちょっと面白いと思ってました" }
+  ];
+
+  // 返事ごとの「世間の怒り」の増減
+  var EFFECT = {
+    angry: { sincere: -2,  explain: -16, escape: 26, joke: 36 },
+    kind:  { sincere: -18, explain: -4,  escape: 16, joke: 12 },
+    meme:  { sincere: 12,  explain: 4,   escape: 28, joke: -16 }
+  };
+
+  var REACT = {
+    angry: {
+      sincere: "「謝って済むか！ 説明はどうした！」",
+      explain: "「…ふん。経緯は分かった。次！」",
+      escape:  "「ふざけるな！！ 記憶にないで済むか！！」",
+      joke:    "「ふざけてるのか！！！」（机をたたく音）"
+    },
+    kind: {
+      sincere: "「…その言葉が、聞きたかったです」",
+      explain: "「ご事情は分かりました…でも、気持ちは…」",
+      escape:  "「そんな…私たちは信じていたのに…」",
+      joke:    "「こんなときに、冗談はやめてください…」"
+    },
+    meme: {
+      sincere: "「『全て私の責任です』いただきました！ 切り抜きます！」",
+      explain: "「うーん、地味ですね。見出しにならないなあ」",
+      escape:  "「『記憶にございません』！ 拡散します！」",
+      joke:    "「最高です！！ 今のは伸びますよ！！（会場、爆笑）」"
+    }
+  };
+
+  var TWEET_NAMES = ["@ふつうの会社員", "@元社員A", "@通りすがり", "@株主のひとり", "@ねこ好き", "@朝のニュース係", "@深夜のラーメン"];
+  var TWEETS = {
+    success: ["誠実で、逆に好感度が上がった", "この社長なら、また買いたい", "不祥事の内容は謎だけど、会見は100点", "株価、ストップ高らしい"],
+    ok:      ["とりあえず反省はしてるっぽい", "許したわけじゃないけど、様子見", "まあ、ギリギリ合格かな", "もう少し説明がほしかった"],
+    burn:    ["全然反省してないよね", "説明が足りない。やり直し", "会見のほうが、不祥事を増やしてる", "これは燃える…"],
+    fire:    ["会見がいちばんの不祥事", "切り抜きだけでお腹いっぱい", "もう、辞任でいいよ", "この会見、教科書に載せたい（悪い例で）"],
+    resign:  ["辞任の速さが新記録", "会見の開始から、何分で辞任？", "伝説の会見になった", "社長、おつかれさまでした…"]
+  };
+
+  var ENDINGS = {
+    success: { rank: "🏆 信頼回復の神", head: "「誠実な会見」と称賛　{c}、株価ストップ高", sub: "号外・経済面" },
+    ok:      { rank: "🙂 ギリギリ生き残った社長", head: "{c}、会見でなんとか乗り切る　「様子を見たい」の声", sub: "夕刊" },
+    burn:    { rank: "🔥 炎上の火付け役", head: "【炎上】{c}の会見、火に油　ネットで批判相次ぐ", sub: "速報" },
+    fire:    { rank: "💥 会見のほうが不祥事", head: "【大炎上】{c}の社長会見が「不祥事を超えた」と話題に", sub: "号外" },
+    resign:  { rank: "🪦 最速辞任", head: "【速報】{c}の社長、会見の途中で辞任を表明", sub: "緊急速報" }
+  };
+
+  // ---------- 状態 ----------
+  var st = {
+    anger: 40, company: "", incident: null,
+    target: 55,
+    bowing: false, angle: 0, bowLast: 0, bowDone: false,
+    q: 0, qType: "angry", qTimer: null, qStart: 0, qLimit: 7, answered: false,
+    resigned: false, resignAt: 0,
+    ending: null, log: []
+  };
+
+  // ---------- 怒りゲージ ----------
+  function setAnger(v) {
+    st.anger = Math.max(0, Math.min(100, v));
+    [["angerBar1", "angerNum1"], ["angerBar2", "angerNum2"]].forEach(function (ids) {
+      var bar = $(ids[0]);
+      bar.style.width = st.anger + "%";
+      bar.classList.toggle("mid", st.anger >= 40 && st.anger < 70);
+      bar.classList.toggle("high", st.anger >= 70);
+      $(ids[1]).textContent = Math.round(st.anger) + "%";
+    });
+  }
+  function showDelta(d) {
+    var el = $("delta");
+    el.textContent = (d > 0 ? "+" : "") + d;
+    el.classList.add("on");
+    setTimeout(function () { el.classList.remove("on"); }, 1300);
+  }
+
+  // ---------- 開始 ----------
+  function startGame() {
+    st.company = pick(COMPANIES);
+    st.incident = pick(INCIDENTS);
+    st.target = 25 + st.incident.stars * 15;     // 40 / 55 / 70
+    st.angle = 0; st.bowing = false; st.bowDone = false;
+    st.q = 0; st.resigned = false; st.log = [];
+    setAnger(30 + st.incident.stars * 10);
+    $("companyText").textContent = "【" + st.company + "】社長会見";
+    $("incidentText").textContent = "不祥事：" + st.incident.text;
+    $("targetHint").textContent = STAR_LABEL[st.incident.stars] + "（" + st.target + "°）";
+    $("targetTick").style.left = st.target + "%";
+    $("angleFill").style.width = "0%";
+    $("angleText").textContent = "0°";
+    $("person").style.transform = "rotate(0deg)";
+    $("bowMsg").textContent = "";
+    $("toQBtn").hidden = true;
+    $("bowBtn").hidden = false;
+    show("bow");
+  }
+
+  // ---------- お辞儀 ----------
+  function bowLoop(ts) {
+    if (!st.bowing) return;
+    if (!st.bowLast) st.bowLast = ts;
+    var dt = Math.min((ts - st.bowLast) / 1000, 0.1);
+    st.bowLast = ts;
+    st.angle += (30 + st.angle * 0.9) * dt;
+    if (st.angle >= 100) { st.angle = 100; renderBow(); releaseBow(); return; }
+    renderBow();
+    requestAnimationFrame(bowLoop);
+  }
+  function renderBow() {
+    $("angleFill").style.width = Math.min(100, st.angle) + "%";
+    $("angleText").textContent = Math.round(st.angle) + "°";
+    $("person").style.transform = "rotate(" + (st.angle * 0.9).toFixed(1) + "deg)";
+  }
+  function pressBow(e) {
+    if (e && e.cancelable) e.preventDefault();
+    if (st.bowDone || st.bowing) return;
+    st.bowing = true; st.angle = 0; st.bowLast = 0;
+    $("bowBtn").classList.add("pressed");
+    $("bowMsg").textContent = "";
+    requestAnimationFrame(bowLoop);
+  }
+  function releaseBow() {
+    if (!st.bowing) return;
+    st.bowing = false;
+    st.bowDone = true;
+    $("bowBtn").classList.remove("pressed");
+    $("bowBtn").hidden = true;
+
+    var a = st.angle;
+    var diff = a - st.target;
+    var d, msg;
+    if (a >= 100) { d = 20; msg = "🙇 土下座！ 頭が床についた！ 記者「やりすぎでは…」"; }
+    else if (Math.abs(diff) <= 6) { d = -15; msg = "✨ 完ぺきなお辞儀。フラッシュが一斉に光った"; }
+    else if (diff < -18) { d = 18; msg = "😬 軽っ！！ 「誠意が足りない」の声"; }
+    else if (diff < 0) { d = 6; msg = "😐 ちょっと浅い… 会場がざわつく"; }
+    else if (diff <= 18) { d = -4; msg = "🙂 少し深め。でも誠意は伝わった"; }
+    else { d = 10; msg = "😅 深すぎ！ 「演技っぽい」とささやかれる"; }
+
+    $("flash").classList.remove("go");
+    void $("flash").offsetWidth;
+    $("flash").classList.add("go");
+    setAnger(st.anger + d);
+    $("bowMsg").textContent = msg + "（怒り " + (d > 0 ? "+" : "") + d + "）";
+    $("toQBtn").hidden = false;
+  }
+
+  // ---------- 質問 ----------
+  function nextQuestion() {
+    if (st.q >= QUESTIONS) { finish("normal"); return; }
+    // 同じタイプの記者が続くこともある（そのとき同じ返事を続けると怒られる）
+    st.qType = pick(["angry", "kind", "meme"]);
+    var rep = REPORTERS[st.qType];
+    st.answered = false;
+    st.qLimit = TIMES[st.q];
+    $("qNo").textContent = "質問 " + (st.q + 1) + "/" + QUESTIONS;
+    $("repIcon").textContent = rep.icon;
+    $("repWho").textContent = rep.who;
+    $("repLine").textContent = pick(rep.lines);
+    $("react").textContent = "";
+
+    var box = $("opts");
+    box.innerHTML = "";
+    shuffle(OPTIONS).forEach(function (o) {
+      var b = document.createElement("button");
+      b.className = "opt";
+      b.textContent = o.text;
+      b.addEventListener("click", function () { answer(o.id); });
+      box.appendChild(b);
+    });
+    show("qa");
+    st.qStart = performance.now();
+    clearInterval(st.qTimer);
+    st.qTimer = setInterval(tickTimer, 80);
+    tickTimer();
+  }
+
+  function tickTimer() {
+    var left = st.qLimit - (performance.now() - st.qStart) / 1000;
+    if (left <= 0) { clearInterval(st.qTimer); if (!st.answered) answer(null); return; }
+    $("qTime").textContent = Math.ceil(left);
+    var bar = $("timerBar");
+    bar.style.width = (left / st.qLimit * 100) + "%";
+    bar.classList.toggle("low", left <= 2);
+  }
+
+  function answer(id) {
+    if (st.answered) return;
+    st.answered = true;
+    clearInterval(st.qTimer);
+    Array.prototype.forEach.call($("opts").children, function (b) { b.disabled = true; });
+
+    var d, line;
+    if (id === null) {
+      d = TIMEOUT_DELTA;
+      line = "…（沈黙）　記者「黙ってないで、何か言え！」";
+    } else {
+      d = EFFECT[st.qType][id] + PRESSURE + Math.round(rand(-3, 3));
+      line = REACT[st.qType][id];
+      // 前の質問と同じ返事を続けると、「さっきも聞いた」と怒られる
+      var prev = st.log.length ? st.log[st.log.length - 1].id : null;
+      if (prev === id) {
+        d += SAME_ANSWER_PENALTY;
+        line += "　＋「それ、さっきも聞きました」";
+      }
+    }
+    st.log.push({ type: st.qType, id: id, d: d });
+    setAnger(st.anger + d);
+    showDelta(d);
+    $("react").textContent = line;
+    if (d > 15) {
+      var r = $("react");
+      r.classList.remove("shake"); void r.offsetWidth; r.classList.add("shake");
+    }
+
+    setTimeout(function () {
+      st.q += 1;
+      if (st.anger >= 100) { st.resigned = true; st.resignAt = st.q; finish("resign"); }
+      else nextQuestion();
+    }, REACT_MS);
+  }
+
+  // ---------- 結果 ----------
+  function finish(kind) {
+    clearInterval(st.qTimer);
+    var key;
+    if (kind === "resign") key = "resign";
+    else if (st.anger <= 20) key = "success";
+    else if (st.anger <= 45) key = "ok";
+    else if (st.anger <= 75) key = "burn";
+    else key = "fire";
+    st.ending = key;
+    var e = ENDINGS[key];
+    var head = e.head.replace("{c}", st.company);
+    st.headline = head;
+    $("paperSub").textContent = e.sub;
+    $("headline").textContent = head;
+    $("endRank").textContent = e.rank + (key === "resign" ? "（" + st.resignAt + "問目で辞任）" : "");
+    $("endAnger").innerHTML = Math.round(st.anger) + "<small>%</small>";
+
+    var box = $("tweets");
+    box.innerHTML = "";
+    var names = shuffle(TWEET_NAMES);
+    shuffle(TWEETS[key]).slice(0, 3).forEach(function (t, i) {
+      var div = document.createElement("div");
+      div.className = "tweet";
+      var who = document.createElement("i");
+      who.textContent = names[i];
+      var body = document.createElement("span");
+      body.textContent = t;
+      div.appendChild(who); div.appendChild(body);
+      box.appendChild(div);
+    });
+    show("end");
+  }
+
+  function shareText() {
+    var e = ENDINGS[st.ending];
+    return "謝罪会見シミュレーター\n" +
+           "【" + st.company + "】" + st.incident.text + "\n" +
+           "→ " + e.rank.replace(/^\S+\s/, "") + "（世間の怒り" + Math.round(st.anger) + "%）\n" +
+           "#謝罪会見シミュレーター";
+  }
+  function pageUrl() { return location.href.split("?")[0].split("#")[0]; }
+
+  // ---------- 入力 ----------
+  var bowBtn = $("bowBtn");
+  bowBtn.addEventListener("pointerdown", pressBow);
+  bowBtn.addEventListener("pointerup", releaseBow);
+  bowBtn.addEventListener("pointercancel", releaseBow);
+  bowBtn.addEventListener("pointerleave", releaseBow);
+  bowBtn.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "Space" && !e.repeat && !screens.bow.hidden && !st.bowDone) { e.preventDefault(); pressBow(); }
+  });
+  window.addEventListener("keyup", function (e) {
+    if (e.code === "Space") releaseBow();
+  });
+
+  $("startBtn").addEventListener("click", startGame);
+  $("toQBtn").addEventListener("click", function () { st.q = 0; nextQuestion(); });
+  $("retryBtn").addEventListener("click", startGame);
+
+  $("shareBtn").addEventListener("click", function () {
+    var url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText()) +
+              "&url=" + encodeURIComponent(pageUrl());
+    window.open(url, "_blank", "noopener");
+  });
+  $("copyBtn").addEventListener("click", function () {
+    var btn = $("copyBtn");
+    function done(msg) {
+      btn.textContent = msg;
+      setTimeout(function () { btn.textContent = "結果をコピーする"; }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareText() + " " + pageUrl()).then(
+        function () { done("コピーしました！"); },
+        function () { done("コピーできませんでした"); });
+    } else {
+      done("コピーできませんでした");
+    }
+  });
+})();
+</script>
+</body>
+</html>
