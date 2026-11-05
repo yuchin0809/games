@@ -36,7 +36,7 @@
       { n: "Wikipedia「段ボール」", u: "https://ja.wikipedia.org/wiki/%E6%AE%B5%E3%83%9C%E3%83%BC%E3%83%AB" }
     ],
     owners: ["通販が好きな会社員", "引っ越し中の一家", "小学3年生の女の子", "近所のおばあちゃん", "ひとり暮らしの大学生", "猫を飼っているお姉さん", "図工が好きな小学生", "フリマアプリが得意なお母さん"],
-    init(c) { newKind(c); c.v.pref = pick(PREFS); },
+    init(c) { newKind(c); /* c.v.thing c.v.flute は newKind で決める */ c.v.pref = pick(PREFS); },
     onRebirth(c) { newKind(c); c.flags = {}; },
     birthText: (c) => `製紙工場で、古紙がとかされて紙になるところから、${c.v.what}を運ぶ段ボール箱の人生が始まった。`,
     start: "papermill", aging: 0,
@@ -119,7 +119,7 @@
         next: [
           { to: "shopback", w: (c) => (c.kind === "mail" ? 1 : 10), t: "トラックに積まれて、お店へ運ばれた。", e: { km: [10, 300] } },
           { to: "doorstep", w: (c) => (c.kind === "mail" ? 10 : 2), t: "宅配トラックに積まれて、お客さんの家へ。", e: { km: [10, 300], owner: true } },
-          { to: "standby", w: 0.5, t: "町の防災用に、倉庫の奥で保管されることになった。", m: "neutral" }
+          { to: "standby", w: 2, t: "町の防災用に、倉庫の奥で保管されることになった。", m: "neutral" }
         ]
       },
       shopback: {
@@ -137,7 +137,7 @@
           ] }
         ],
         next: [
-          { to: "paperyard", w: 60, t: "平らにたたまれて、古紙の回収に出された。" },
+          { to: "paperyard", w: 45, t: "平らにたたまれて、古紙の回収に出された。" },
           { to: "room", w: 22, t: "お客さんが「引っ越しに使えそう」と、持ち帰ってくれた。", e: { owner: true }, m: "happy" },
           { to: "craft", w: 6, t: "小学生が「工作に使いたい」と、もらっていった。", e: { owner: true, who: "図工が好きな小学生" }, m: "happy" },
           { to: "secretbase", w: 5, t: "子どもたちが「秘密基地を作ろう！」と、もらっていった。", e: { owner: true, who: "近所の子どもたち" }, m: "surprise" }
@@ -186,12 +186,12 @@
         ],
         // 部屋で次に何をされるかは演出（回収率97.3%の全国の数字とは別）
         next: [
-          { to: "paperyard", w: 38, t: "たたまれて、資源ごみの日に出された。" },
+          { to: "paperyard", w: 28, t: "たたまれて、資源ごみの日に出された。" },
           { to: "secretbase", w: 12, t: "子どもに「秘密基地にしたい！」と言われて、基地の材料に選ばれた。", m: "surprise" },
           { to: "catroom", w: 10, t: "猫が、きみのまわりをぐるぐる回り始めた…。", m: "surprise" },
           { to: "craft", w: 8, t: "「工作に使おう」と、きみは図工の材料にされた。", m: "happy" },
           { to: "moving", w: 12, t: "家族が引っ越しをするらしい。荷物をつめる箱になった。", e: { km: [1, 5] } },
-          { to: "closet", w: 8, t: "「また使うかも」と、押し入れにしまわれた。", m: "sleep" },
+          { to: "closet", w: 12, t: "「また使うかも」と、押し入れにしまわれた。", m: "sleep" },
           { to: "warehouse", w: 5, t: "品物を詰められて、また宅配便として出発した！", e: { owner: true }, m: "happy" }
         ]
       },
@@ -353,7 +353,7 @@
           { t: "水の中に入れられて、ぐるぐる。どろどろにとけて、紙の繊維にもどっていく。", m: "surprise", e: { cond: 30 } },
           { t: "古紙を使った段ボールは、また段ボールに生まれ変われる。板紙の古紙利用率は93%を超えている。", f: "日本製紙連合会", m: "happy" }
         ],
-        rebirth: { max: 4, t: "どろどろから、また新しい段ボール箱として生まれ変わった！", f: "日本製紙連合会", end: "manytimes" }
+        rebirth: { max: 3, t: "どろどろから、また新しい段ボール箱として生まれ変わった！", f: "日本製紙連合会", end: "manytimes" }
       },
       export: {
         scene: "ship", label: () => "コンテナ船", stay: [10, 30], n: [1, 1],
