@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>既読スルー耐久 | ゆううのゲームひろば</title>
+<meta name="description" content="返信が来るまで、追撃を我慢できる？ 既読がついたあと何時間耐えられるかを試す、1〜3分の小さなゲーム。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="既読スルー耐久">
+<meta property="og:description" content="返信が来るまで、追撃を我慢できる？ あなたの称号と返信はランダムで決まります。">
+<meta name="twitter:card" content="summary">
+<style>
+:root{
+  --bg:#f5f2ec; --ink:#23262b; --sub:#6b7078; --card:#ffffff; --line:#e3ded3;
+  --accent:#2f9e63; --accent-d:#237a4c; --danger:#d9534f; --me:#8be28b; --chat:#dbe6f0; --head:#27333f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic","Meiryo",system-ui,sans-serif;
+  line-height:1.6; -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column}
+.screen.on{display:flex}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:14px 16px;min-height:48px}
+button:focus-visible,a:focus-visible{outline:3px solid #1b6ef3;outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+
+/* start */
+.hero{padding:28px 20px 8px;text-align:center}
+.hero h1{font-size:30px;margin:0 0 6px;letter-spacing:.02em}
+.hero p{margin:0;color:var(--sub);font-size:15px}
+.rules{margin:16px 20px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:14px}
+.rules b{color:var(--accent-d)}
+.scn-list{padding:4px 20px 12px;display:grid;gap:10px}
+.scn{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);padding:14px 16px}
+.scn:hover{border-color:var(--accent)}
+.scn .l{font-size:12px;color:var(--accent-d);font-weight:700}
+.scn .n{font-size:17px;font-weight:700}
+.scn .f{font-size:13px;color:var(--sub);margin-top:2px}
+.coll{margin:4px 20px 8px;font-size:13px;color:var(--sub);text-align:center}
+.foot{padding:18px 20px 26px;text-align:center;color:var(--sub);font-size:12px}
+
+/* game */
+.ghead{background:var(--head);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.ava{width:38px;height:38px;border-radius:50%;background:#aab7c4;display:grid;place-items:center;font-weight:700;color:#27333f}
+.ghead .who{font-weight:700;line-height:1.2}
+.ghead .st{font-size:12px;color:#b9c6d2;min-height:1.2em}
+.ghead .st.typing{color:#ffd86b}
+.clock{margin-left:auto;font-variant-numeric:tabular-nums;font-size:14px;color:#dfe8f1}
+.chat{flex:1;background:var(--chat);padding:14px 12px;overflow-y:auto;min-height:260px;max-height:calc(100vh - 250px)}
+.row{display:flex;margin:8px 0;align-items:flex-end;gap:6px}
+.row.me{justify-content:flex-end}
+.bub{max-width:76%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;font-size:15px;animation:pop .18s ease-out}
+.row.me .bub{background:var(--me);border-bottom-right-radius:4px}
+.row.them .bub{background:#fff;border-bottom-left-radius:4px}
+.bub.sticker{background:transparent!important;border:2px dashed #8b9bab;color:#4b5a69;font-size:14px}
+.meta{font-size:11px;color:#5b6b7b;text-align:right;line-height:1.2;min-width:34px}
+.row.them .meta{text-align:left}
+@keyframes pop{from{transform:scale(.92);opacity:.4}to{transform:none;opacity:1}}
+.bar{display:flex;justify-content:space-around;background:#fff;border-top:1px solid var(--line);padding:8px 8px;font-size:13px;color:var(--sub)}
+.bar b{display:block;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums;text-align:center}
+.bar div{text-align:center}
+.ctrl{background:#fff;padding:10px 12px 18px;display:grid;gap:8px}
+.btn-tsuigeki{background:var(--danger);color:#fff;font-weight:700;font-size:17px}
+.btn-tsuigeki:active{transform:scale(.98)}
+.btn-row{display:flex;gap:8px}
+.btn-row button{flex:1;background:#eef1f4;color:var(--ink);font-size:14px}
+.hint{font-size:12px;color:var(--sub);text-align:center}
+
+/* result */
+.res{padding:22px 18px 8px}
+.res .sc{font-size:13px;color:var(--accent-d);font-weight:700;text-align:center}
+.res .ttl-lab{text-align:center;font-size:13px;color:var(--sub);margin-top:6px}
+.res .ttl{font-size:30px;font-weight:800;text-align:center;margin:0;line-height:1.3}
+.res .desc{text-align:center;color:var(--sub);font-size:14px;margin:4px 0 14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.stat .k{font-size:11px;color:var(--sub)}
+.stat .v{font-size:16px;font-weight:700}
+.rep{background:var(--chat);border-radius:14px;padding:12px;margin-bottom:12px}
+.rep .cap{font-size:12px;color:#51606f;margin-bottom:4px}
+.verdict{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:15px}
+.cardimg{width:100%;border-radius:12px;border:1px solid var(--line);display:block;margin:8px 0 4px}
+.share{display:grid;gap:8px;margin:10px 0}
+.btn-x{background:#111;color:#fff;font-weight:700;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;border-radius:14px;min-height:48px}
+.btn-sub{background:#eef1f4;color:var(--ink)}
+.btn-main{background:var(--accent);color:#fff;font-weight:700}
+.collect{font-size:13px;color:var(--sub);text-align:center;margin:8px 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:.95}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- スタート画面 -->
+  <section id="s-start" class="screen on">
+    <div class="hero">
+      <h1>既読スルー耐久</h1>
+      <p>送ったメッセージに、既読だけがついた。<br>あなたは何時間、追撃せずに待てる？</p>
+    </div>
+    <div class="rules">
+      <b>あそびかた</b><br>
+      メッセージを送ったあと、返信を待ちます。時間は早送りで進みます（1秒＝5分）。<br>
+      「追撃を送る」を押すと、つい送ってしまった回数が記録されます。<br>
+      返信が来るか、あきらめて寝るか、12時間たつと結果が出ます。返信の内容と来る時間は、毎回ランダムです。
+    </div>
+    <div class="scn-list" id="scnList"></div>
+    <div class="coll" id="collStart"></div>
+    <div class="foot">ゆううのゲームひろば ／ 保存はこの端末のブラウザの中だけです</div>
+  </section>
+
+  <!-- ゲーム画面 -->
+  <section id="s-game" class="screen">
+    <div class="ghead">
+      <div class="ava" id="ava">?</div>
+      <div><div class="who" id="who"></div><div class="st" id="st"></div></div>
+      <div class="clock" id="clock"></div>
+    </div>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <div class="bar">
+      <div>経過時間<b id="elapsed">0分</b></div>
+      <div>追撃<b id="fcount">0回</b></div>
+      <div>上限まで<b id="remain">12時間</b></div>
+    </div>
+    <div class="ctrl">
+      <button class="btn-tsuigeki" id="btnFollow">追撃を送る</button>
+      <div class="btn-row">
+        <button id="btnSpeed">早送り ×1</button>
+        <button id="btnSleep">あきらめて寝る</button>
+      </div>
+      <div class="hint">追撃を一度も送らずに耐えると、いい称号が出ます。</div>
+    </div>
+  </section>
+
+  <!-- 結果画面 -->
+  <section id="s-result" class="screen">
+    <div class="res" id="resBody"></div>
+    <div class="share" style="padding:0 18px">
+      <a class="btn-x" id="btnX" href="#" target="_blank" rel="noopener noreferrer">Xでシェアする</a>
+      <button class="btn-sub" id="btnCopy">投稿文をコピー</button>
+      <button class="btn-sub" id="btnSave">画像を保存</button>
+      <button class="btn-main" id="btnAgain">もう一度（同じシチュエーション）</button>
+      <button class="btn-sub" id="btnMenu">ほかのシチュエーションを選ぶ</button>
+    </div>
+    <div class="foot">ゆううのゲームひろば</div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   データ：シチュエーションと返信
+   R(時間帯, 追撃の回数, 気分, ...吹き出し)
+   時間帯  F=1時間以内 / M=1〜5時間 / S=5時間以降
+   追撃    0=なし / 1=1〜2回 / 2=3回以上
+   気分    g=良い返事 / m=保留 / b=残念 / f=ふしぎな返事
+   '#'で始まる吹き出しはスタンプ扱い
+   ============================================================ */
+const R=(t,f,m,...b)=>({t,f,m,b});
+
+const SCENARIOS=[
+{
+ id:'love', label:'恋愛編', name:'気になる人にごはんの誘い', who:'みお', ava:'み',
+ first:'今度ごはん行かない？', start:21*60+40,
+ follow:['忙しかったらごめん！','返信を急かしてるわけじゃないよ','あ、スルーしていいやつだった？','？','もしかして寝てる？','さっきのは忘れて！','やっぱ忘れないで','既読ついてるのに…'],
+ verdict:{g:'脈あり！ 耐えた甲斐がありました。',m:'保留です。勝負はここからです。',b:'残念…。でも追撃が少ないほど、傷は浅く済みます。',f:'解釈が分かれる返信です。友だちに見せて意見を聞きましょう。',none:'返信はありませんでした。あなたのせいではありません、たぶん。'},
+ replies:[
+  R('F','012','g','行く！！','どこ行きたい？'),
+  R('F','012','g','え、うれしい','来週の金曜どう？'),
+  R('F','0','g','ごめん今気づいた！','ぜひ〜 いつがいい？'),
+  R('F','0','f','今ちょうど同じこと考えてた','テレパシー？'),
+  R('F','012','m','あ、いいね！','予定見てまた連絡するね'),
+  R('F','012','b','ごめん、今ちょっと余裕なくて…'),
+  R('F','012','f','#犬が全力で喜ぶスタンプ'),
+  R('F','2','f','連投すごいね笑','全部読んだ！ 行く！'),
+  R('M','012','g','返信遅くなってごめん！ お風呂入ってた','ごはん行きたい！'),
+  R('M','0','g','ごめん、スマホの充電切れてた…','もちろん行く！！'),
+  R('M','012','m','ごめん今見た〜','来月なら空いてるかも'),
+  R('M','12','g','追撃ありがとう笑','全然スルーじゃないよ、行こ！'),
+  R('M','012','f','1人で行くのは緊張するから','3人くらいで行かない？'),
+  R('M','012','b','ごめん、そういうつもりじゃなくて…','友だちとして、なら'),
+  R('M','012','f','👍'),
+  R('M','012','f','今から？'),
+  R('M','2','m','いっぱい来ててびっくりしたw','とりあえず今度の週末でいい？'),
+  R('S','012','g','おはよう！ 昨日寝落ちしてた','行こ行こ！'),
+  R('S','012','m','おはよ〜。昨日ごめん、寝てた','週末は予定あるから、また今度ね'),
+  R('S','0','g','ごめん、昨日ごはん屋さんの予約サイト見てたら寝てた','ここどう？'),
+  R('S','012','b','ごめんなさい、他に気になる人がいて…'),
+  R('S','2','b','ちょっと連絡が多くてびっくりした…','少し落ち着いて話そう'),
+  R('S','2','f','通知が17件になってた笑','元気だね'),
+  R('S','012','f','ごめん！！！ そのまま寝て今起きた！！！','遅刻する！！！ またあとで！！！')
+ ]
+},
+{
+ id:'friend', label:'友だち編', name:'久しぶりの飲みの誘い', who:'ゆうき', ava:'ゆ',
+ first:'今週末ひま？ 久しぶりに飲もうよ🍺', start:20*60+10,
+ follow:['ひまじゃなかったらスルーでOK','おーい','生きてる？','生存確認','もう一人で飲み始めた🍺','ほかの人誘うね？','いや、待ってる','…'],
+ verdict:{g:'飲み会、成立です。かんぱい！',m:'保留です。幹事の腕の見せどころ。',b:'今回は縁がなかったようです。次回に期待しましょう。',f:'返信の意味は、会ってから聞きましょう。',none:'返信なし。きっと生きています。たぶん。'},
+ replies:[
+  R('F','012','g','ひま！！ どこで飲む？'),
+  R('F','012','g','いいね〜！ 金土どっちがいい？'),
+  R('F','0','f','ちょうど飲みたかった！！','エスパー？'),
+  R('F','012','m','日曜なら空いてるかも','ちょっと確認する'),
+  R('F','012','f','あ、そっち？','こっちから誘おうと思ってた'),
+  R('F','012','b','悪い、今週は無理','また今度！'),
+  R('F','2','f','通知うるさすぎて笑った','分かった分かった、行くよ'),
+  R('M','012','g','ごめん風呂入ってた笑','土曜行ける！'),
+  R('M','012','f','既読つけたまま寝てた','でも飲みたい気持ちは覚えてる'),
+  R('M','012','m','今週は無理かも…','来週はどう？'),
+  R('M','012','b','ごめん、今週ずっと残業で死んでる','来月かも…'),
+  R('M','012','f','先に言っとくけど、2軒目は行かないからね'),
+  R('M','012','g','#ビールで乾杯するスタンプ'),
+  R('M','0','f','いま家族に呼ばれてた','5分で戻る'),
+  R('M','1','g','追いLINEありがとう笑','ちょうど返そうと思ってた'),
+  R('S','012','g','おはよ！ 昨日そのまま寝てた','土曜の夜でどう？'),
+  R('S','012','m','ごめん、返すの忘れてた','今週は無理だわ、また連絡する'),
+  R('S','012','f','ごめん、間違えて別のグループに返信してた','気にしないで'),
+  R('S','012','b','正直、今ちょっと飲む気分じゃなくて…','また今度ね'),
+  R('S','012','f','それ、いつ誘ってくれるのかと思ってた'),
+  R('S','2','m','生きてるよ！！','仕事中なんだってば'),
+  R('M','2','m','生きてるよ！！','仕事中なんだってば')
+ ]
+},
+{
+ id:'work', label:'仕事編', name:'上司に資料の確認をお願いした', who:'田中部長', ava:'田',
+ first:'お疲れさまです。先ほどお送りした資料、ご確認いただけましたでしょうか？', start:18*60+20,
+ follow:['お忙しいところ恐れ入ります。ご確認のほど、よろしくお願いいたします。','念のため、資料を再送いたします。','差し支えなければ、本日中にご返信いただけますと幸いです。','お手すきの際で構いませんので…','お電話してもよろしいでしょうか？','何度も申し訳ございません。','（資料を再々送）','ご確認いただけましたでしょうか（3回目）'],
+ verdict:{g:'承認です。明日の仕事が軽くなりました。',m:'保留です。明日の朝まで気は抜けません。',b:'修正の連絡です。資料の第二版を作りましょう。',f:'返信の意味を、同僚に相談してみましょう。',none:'返信なし。明日の朝、直接聞きに行きましょう。'},
+ replies:[
+  R('F','012','g','確認しました。問題ありません。'),
+  R('F','012','g','ありがとうございます。そのまま進めてください。'),
+  R('F','012','m','確認中です。明日の午前中に回答します。'),
+  R('F','012','f','了解'),
+  R('F','012','f','承知しました。なお、この件は私ではなく山田さんの担当です。'),
+  R('F','012','b','ここ、数字が違っていませんか？'),
+  R('F','1','g','再送ありがとうございます。確認しました。'),
+  R('M','012','g','遅くなってすみません、会議中でした。','OKです！'),
+  R('M','012','m','一点だけ確認させてください。','3ページ目の件、後ほど電話します。'),
+  R('M','012','f','ありがとうございます。','添付が開けないので、もう一度送っていただけますか？'),
+  R('M','012','b','この内容だと、上に通すのは難しいかもしれません。'),
+  R('M','012','f','👍'),
+  R('M','012','f','見ました。','ところで先週の件ですが'),
+  R('M','012','m','今日は直帰します。明日見ます。'),
+  R('M','2','f','同じ資料が4通届いていました。','1通で大丈夫です'),
+  R('S','012','g','おはようございます。昨日は失礼しました。','内容、問題ありません。'),
+  R('S','012','m','本日の会議後に回答します。'),
+  R('S','012','f','【自動返信】本日は終日不在にしております。'),
+  R('S','012','b','先ほど見ましたが、修正をお願いしたい箇所が12か所あります。'),
+  R('S','012','f','その件、昨日Slackで返信したはずですが…'),
+  R('S','2','b','催促が多くて少し驚きました。','順番に確認しているので、お待ちください。')
+ ]
+},
+{
+ id:'family', label:'家族編', name:'お母さんに今日の夕飯をきいた', who:'お母さん', ava:'母',
+ first:'今日の夕飯なに？', start:17*60+50,
+ follow:['おなかすいた','カレー？','カレーだよね？','ねえ','ハンバーグでもいいよ','もうコンビニ行っていい？','お母さん！','…外で食べてくるね'],
+ verdict:{g:'夕飯、確保です。手を洗ってきましょう。',m:'保留です。冷蔵庫を確認しておきましょう。',b:'今夜は自力で乗り切りましょう。',f:'返信の意味は、食卓で確かめましょう。',none:'返信なし。たぶんスマホを見ていません。'},
+ replies:[
+  R('F','012','g','カレーだよ','もうすぐできる'),
+  R('F','012','g','ハンバーグ。手伝って'),
+  R('F','012','f','冷蔵庫見て、考えて'),
+  R('F','012','m','何がいい？'),
+  R('F','012','b','今日は自分で何か作って'),
+  R('F','0','f','なんでもいいって言うのが一番困る'),
+  R('F','1','g','はいはい、今作ってるよ'),
+  R('M','012','g','ごめん、買い物行ってた。','唐揚げにするよ'),
+  R('M','012','g','ビーフシチュー','手伝ってほしいから早く来て'),
+  R('M','012','f','今日はお父さんが作る日だよ'),
+  R('M','012','m','ごめん、まだ考えてない','何か食べたいのある？'),
+  R('M','012','f','（写真：どう見ても昨日の残り物）','リメイクだよ'),
+  R('M','012','b','今日は外で食べてきて、ごめん'),
+  R('M','012','f','もう食べ終わったよ'),
+  R('M','012','f','#猫がごはんを待つスタンプ'),
+  R('M','2','b','うるさい。もうすぐできるから待ってて'),
+  R('S','012','g','ごめん、先に寝てた','冷蔵庫にカレーあるよ'),
+  R('S','012','f','そろそろ朝ごはんの時間だけど'),
+  R('S','012','f','夕飯？ もう食べたでしょ？'),
+  R('S','012','m','ごめん、今日は夜勤だから','また明日ね'),
+  R('S','2','f','まだ作ってないのに、通知だけ鳴り止まない')
+ ]
+}
+];
+const TOTAL_REPLIES=SCENARIOS.reduce((a,s)=>a+s.replies.length,0);
+
+const TITLES={
+ sleepNone:{n:'寝て待てる人',d:'スマホを置いて寝られる。大人の余裕です。'},
+ sleepFollow:{n:'泣き寝入り',d:'追撃したあと、不安なまま寝ました。おつかれさま。'},
+ ghost0:{n:'悟りの境地',d:'一度も追撃せず、12時間を待ちきりました。'},
+ ghost1:{n:'静かに諦めた人',d:'何度かつついて、静かに手を離しました。'},
+ ghost2:{n:'虚空に話しかけた人',d:'返事のない画面に、何度も話しかけました。'},
+ steel:{n:'鋼のメンタル',d:'3時間以上、追撃なしで待ちました。'},
+ calm:{n:'余裕の人',d:'追撃ゼロ。落ち着いて返信を迎えました。'},
+ worry:{n:'ちょっと不安な人',d:'1〜2回つついてしまった、ごく普通の人です。'},
+ triple:{n:'3連投の人',d:'3〜4回の追撃。送信ボタンが軽すぎます。'},
+ mash:{n:'連打の達人',d:'5回以上の追撃。画面が追撃で埋まりました。'},
+ collide:{n:'入力中に被せた人',d:'相手が入力している最中に送ってしまいました。タイミングが惜しい！'}
+};
+const TITLE_KEYS=Object.keys(TITLES);
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+const CAP=720;          // 12時間（分）
+const TICK_MS=200;      // 0.2秒ごとに1分進む（1秒＝5分）
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rint=(a,b)=>Math.floor(rnd(a,b+1));
+
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+function fmtClock(startMin,t){
+  const m=startMin+Math.floor(t);
+  const d=Math.floor(m/1440), hh=Math.floor((m%1440)/60), mm=m%60;
+  return (d>0?'翌 ':'')+hh+':'+String(mm).padStart(2,'0');
+}
+function fmtDur(t){
+  t=Math.floor(t); const h=Math.floor(t/60), m=t%60;
+  if(h>0&&m>0) return h+'時間'+m+'分';
+  if(h>0) return h+'時間';
+  return m+'分';
+}
+function toast(msg){
+  const el=$('toast'); el.textContent=msg; el.classList.add('on');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('on'),1800);
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $(id).classList.add('on'); window.scrollTo(0,0);
+}
+
+/* 保存データ */
+function seenSet(){return new Set(lsGet('kidoku_seen_v1',[]));}
+function titlesSet(){return new Set(lsGet('kidoku_titles_v1',[]));}
+
+/* ============================================================
+   スタート画面
+   ============================================================ */
+function renderStart(){
+  const box=$('scnList'); box.innerHTML='';
+  SCENARIOS.forEach((s,i)=>{
+    const b=document.createElement('button'); b.className='scn'; b.type='button';
+    b.innerHTML='<div class="l"></div><div class="n"></div><div class="f"></div>';
+    b.querySelector('.l').textContent=s.label;
+    b.querySelector('.n').textContent=s.name;
+    b.querySelector('.f').textContent='送るメッセージ：「'+s.first+'」';
+    b.addEventListener('click',()=>startGame(i));
+    box.appendChild(b);
+  });
+  $('collStart').textContent='集めた称号 '+titlesSet().size+' / '+TITLE_KEYS.length+'　／　見た返信 '+seenSet().size+' / '+TOTAL_REPLIES;
+}
+
+/* ============================================================
+   ゲーム本体
+   ============================================================ */
+let G=null, timer=null;
+
+function rollReplyAt(){
+  const r=Math.random();
+  if(r<0.12) return null;            // 返信なし
+  if(r<0.37) return rint(3,55);      // 早い
+  if(r<0.67) return rint(60,290);    // ふつう
+  return rint(300,CAP-20);           // 遅い
+}
+
+function startGame(si){
+  const sc=SCENARIOS[si];
+  const replyAt=rollReplyAt();
+  const unread=Math.random()<0.12;
+  let readAt;
+  if(unread) readAt=(replyAt===null)?Infinity:replyAt;
+  else {
+    readAt=rint(1,45);
+    if(replyAt!==null&&readAt>=replyAt) readAt=Math.max(1,replyAt-1);
+  }
+  // 「入力中…」の見せかけ
+  const blips=[];
+  if(readAt!==Infinity){
+    const end=(replyAt===null?CAP:replyAt)-2;
+    const n=rint(0,2);
+    for(let i=0;i<n;i++){
+      const s=rint(Math.floor(readAt)+1,Math.max(Math.floor(readAt)+2,end));
+      if(s<end) blips.push([s,s+rint(8,20)]);
+    }
+    if(replyAt!==null&&Math.random()<0.6) blips.push([replyAt-rint(6,14),replyAt]);
+  }
+  G={sc,si,now:0,follow:0,collide:0,read:false,readAt,replyAt,unread,
+     typing:false,blips,over:false,replying:false,speed:1,fi:0,reply:null,
+     messages:[{from:'me',text:sc.first,t:0,read:false}]};
+  $('who').textContent=sc.who; $('ava').textContent=sc.ava;
+  $('btnSpeed').textContent='早送り ×1';
+  $('btnFollow').disabled=false; $('btnSleep').disabled=false; $('btnSpeed').disabled=false;
+  renderAll(); show('s-game');
+  clearInterval(timer);
+  timer=setInterval(tick,TICK_MS);
+}
+
+function tick(){
+  if(!G||G.over||G.replying) return;
+  for(let i=0;i<G.speed;i++){ step(); if(G.over||G.replying) break; }
+  renderAll();
+}
+
+function step(){
+  G.now+=1;
+  if(!G.read&&G.now>=G.readAt){
+    G.read=true; G.messages.forEach(m=>{if(m.from==='me') m.read=true;});
+  }
+  G.typing=G.blips.some(b=>G.now>=b[0]&&G.now<b[1]);
+  if(G.replyAt!==null&&G.now>=G.replyAt){ deliver(); return; }
+  if(G.now>=CAP){ endGame('ghost'); }
+}
+
+function pickReply(t,f){
+  const sc=G.sc;
+  const tier=t<60?'F':(t<300?'M':'S');
+  const fc=f===0?'0':(f<=2?'1':'2');
+  let pool=sc.replies.filter(r=>r.t.includes(tier)&&r.f.includes(fc));
+  if(!pool.length) pool=sc.replies.filter(r=>r.t.includes(tier));
+  if(!pool.length) pool=sc.replies;
+  const seen=seenSet();
+  // まだ見ていない返信を出やすくする
+  const bag=[];
+  pool.forEach(r=>{
+    const id=G.si+':'+sc.replies.indexOf(r);
+    const w=seen.has(id)?1:3;
+    for(let k=0;k<w;k++) bag.push(r);
+  });
+  const r=bag[Math.floor(Math.random()*bag.length)];
+  return {r,id:G.si+':'+sc.replies.indexOf(r)};
+}
+
+function deliver(){
+  G.replying=true; G.typing=true;
+  $('btnFollow').disabled=true; $('btnSleep').disabled=true; $('btnSpeed').disabled=true;
+  const pr=pickReply(G.now,G.follow);
+  G.reply=pr; G.replyTime=G.now;
+  if(!G.read){ G.read=true; G.messages.forEach(m=>{if(m.from==='me') m.read=true;}); }
+  renderAll();
+  const gap=950;
+  pr.r.b.forEach((txt,i)=>{
+    setTimeout(()=>{
+      if(!G||G.over) return;
+      G.messages.push({from:'them',text:txt,t:G.now});
+      G.typing=(i<pr.r.b.length-1);
+      renderAll();
+    },gap*(i+1));
+  });
+  setTimeout(()=>{ if(G&&!G.over) endGame('reply'); },gap*pr.r.b.length+1700);
+}
+
+function sendFollow(){
+  if(!G||G.over||G.replying) return;
+  const sc=G.sc;
+  const text=sc.follow[G.fi%sc.follow.length]; G.fi++;
+  if(G.typing) G.collide++;
+  G.follow++;
+  G.messages.push({from:'me',text,t:G.now,read:G.read});
+  renderAll();
+}
+
+/* ---------- 描画 ---------- */
+function renderAll(){ renderChat(); renderHeader(); renderBar(); }
+
+function renderHeader(){
+  const st=$('st');
+  if(G.typing){ st.textContent='入力中…'; st.className='st typing'; }
+  else { st.textContent=G.read?'':'オンライン'; st.className='st'; }
+  $('clock').textContent=fmtClock(G.sc.start,G.now);
+}
+function renderBar(){
+  $('elapsed').textContent=fmtDur(G.now);
+  $('fcount').textContent=G.follow+'回';
+  $('remain').textContent=fmtDur(Math.max(0,CAP-G.now));
+}
+function bubbleNode(m){
+  const row=document.createElement('div'); row.className='row '+(m.from==='me'?'me':'them');
+  const bub=document.createElement('div'); bub.className='bub';
+  if(m.text.charAt(0)==='#'){ bub.classList.add('sticker'); bub.textContent='【スタンプ】'+m.text.slice(1); }
+  else bub.textContent=m.text;
+  const meta=document.createElement('div'); meta.className='meta';
+  const clock=fmtClock(G.sc.start,m.t);
+  meta.textContent=(m.from==='me'&&m.read?'既読\n':'')+clock;
+  meta.style.whiteSpace='pre';
+  if(m.from==='me'){ row.appendChild(meta); row.appendChild(bub); }
+  else { row.appendChild(bub); row.appendChild(meta); }
+  return row;
+}
+let lastRenderCount=-1, lastReadSig='';
+function renderChat(){
+  const chat=$('chat');
+  const sig=G.messages.map(m=>m.read?1:0).join('');
+  if(G.messages.length===lastRenderCount&&sig===lastReadSig&&chat.childNodes.length) return;
+  lastRenderCount=G.messages.length; lastReadSig=sig;
+  chat.innerHTML='';
+  G.messages.forEach(m=>chat.appendChild(bubbleNode(m)));
+  chat.scrollTop=chat.scrollHeight;
+}
+
+/* ---------- 結果 ---------- */
+function pickTitle(kind){
+  const n=G.follow;
+  if(kind==='sleep') return n===0?'sleepNone':'sleepFollow';
+  if(kind==='ghost') return n===0?'ghost0':(n<=2?'ghost1':'ghost2');
+  if(n>=5) return 'mash';
+  if(n>=1&&G.collide>=1) return 'collide';
+  if(n>=3) return 'triple';
+  if(n>=1) return 'worry';
+  return G.now>=180?'steel':'calm';
+}
+
+let LAST=null;
+function endGame(kind){
+  if(!G||G.over) return;
+  G.over=true; clearInterval(timer);
+  const sc=G.sc;
+  let rep=null, repAt=null, slept=false;
+  if(kind==='reply'){ rep=G.reply; repAt=G.replyTime; }
+  if(kind==='sleep'&&G.replyAt!==null&&G.replyAt<=CAP){
+    rep=pickReply(G.replyAt,G.follow); repAt=G.replyAt; slept=true;
+  }
+  const dur=(kind==='ghost')?CAP:(kind==='reply'?G.replyTime:G.now);
+  const key=pickTitle(kind);
+  // 保存
+  const ts=titlesSet(); ts.add(key); lsSet('kidoku_titles_v1',[...ts]);
+  if(rep){ const ss=seenSet(); ss.add(rep.id); lsSet('kidoku_seen_v1',[...ss]); }
+  const mood=rep?rep.r.m:'none';
+  LAST={sc,kind,key,dur,rep,repAt,slept,mood,follow:G.follow,unreadGhost:(kind==='ghost'&&G.unread&&!G.read)};
+  renderResult();
+  show('s-result');
+}
+
+function repSummary(){
+  if(!LAST.rep) return '来なかった';
+  let t=LAST.rep.r.b[0];
+  if(t.charAt(0)==='#') t='スタンプ：'+t.slice(1);
+  return t.length>22?t.slice(0,22)+'…':t;
+}
+function shareText(){
+  const L=LAST;
+  const url=location.href.split('#')[0];
+  return '【既読スルー耐久】'+L.sc.label+'\n'
+    +'称号：「'+TITLES[L.key].n+'」\n'
+    +'耐えた時間：'+fmtDur(L.dur)+'／追撃：'+L.follow+'回\n'
+    +'返信：'+repSummary()+'\n'
+    +'#既読スルー耐久\n'+url;
+}
+
+function renderResult(){
+  const L=LAST, T=TITLES[L.key];
+  const body=$('resBody'); body.innerHTML='';
+  const add=(cls,html,tag)=>{const d=document.createElement(tag||'div'); d.className=cls; if(html!==undefined) d.textContent=html; body.appendChild(d); return d;};
+  add('sc',L.sc.label+'：'+L.sc.name);
+  add('ttl-lab','あなたの称号');
+  add('ttl',T.n,'h2');
+  add('desc',T.d);
+
+  const stats=add('stats');
+  const mk=(k,v)=>{const s=document.createElement('div'); s.className='stat'; const a=document.createElement('div'); a.className='k'; a.textContent=k; const b=document.createElement('div'); b.className='v'; b.textContent=v; s.appendChild(a); s.appendChild(b); stats.appendChild(s);};
+  mk('耐えた時間',fmtDur(L.dur));
+  mk('追撃',L.follow+'回');
+  mk('入力中に被せた',G.collide+'回');
+
+  const rep=add('rep');
+  const cap=document.createElement('div'); cap.className='cap'; rep.appendChild(cap);
+  if(L.rep){
+    cap.textContent=(L.slept?'寝ている間に、返信が来ていました（':'返信が来ました（')+fmtClock(L.sc.start,L.repAt)+'）';
+    L.rep.r.b.forEach(t=>{
+      const row=document.createElement('div'); row.className='row them';
+      const bub=document.createElement('div'); bub.className='bub';
+      if(t.charAt(0)==='#'){bub.classList.add('sticker'); bub.textContent='【スタンプ】'+t.slice(1);} else bub.textContent=t;
+      row.appendChild(bub); rep.appendChild(row);
+    });
+  } else {
+    if(L.kind==='ghost') cap.textContent=L.unreadGhost?'12時間たっても、最後まで未読のままでした。':'12時間たっても、既読のまま返信はありませんでした。';
+    else cap.textContent='朝になっても、返信は来ませんでした。';
+  }
+  add('verdict',L.sc.verdict[L.mood]);
+
+  const ss=seenSet(), ts=titlesSet();
+  add('collect','集めた称号 '+ts.size+' / '+TITLE_KEYS.length+'　／　見た返信 '+ss.size+' / '+TOTAL_REPLIES);
+
+  const img=document.createElement('img'); img.className='cardimg'; img.alt='結果のカード画像';
+  try{ img.src=drawCard().toDataURL('image/png'); }catch(e){}
+  body.appendChild(img);
+
+  $('btnX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(shareText());
+}
+
+/* ---------- カード画像 ---------- */
+function wrapLines(ctx,text,maxW){
+  const out=[]; let line='';
+  for(const ch of text){
+    if(ch==='\n'){out.push(line); line=''; continue;}
+    if(ctx.measureText(line+ch).width>maxW){out.push(line); line=ch;} else line+=ch;
+  }
+  if(line) out.push(line);
+  return out;
+}
+function drawCard(){
+  const L=LAST, T=TITLES[L.key];
+  const c=document.createElement('canvas'); c.width=1200; c.height=630;
+  const x=c.getContext('2d');
+  const FONT='"Hiragino Sans","Noto Sans JP","Yu Gothic","Meiryo",sans-serif';
+  const g=x.createLinearGradient(0,0,1200,630); g.addColorStop(0,'#27333f'); g.addColorStop(1,'#3c5468');
+  x.fillStyle=g; x.fillRect(0,0,1200,630);
+  x.fillStyle='#ffffff'; x.textAlign='left'; x.textBaseline='alphabetic';
+  x.font='bold 34px '+FONT; x.fillStyle='#9fd8b8'; x.fillText('既読スルー耐久　'+L.sc.label,60,84);
+  x.font='28px '+FONT; x.fillStyle='#c9d4de'; x.fillText('あなたの称号',60,150);
+  x.font='bold 84px '+FONT; x.fillStyle='#ffffff'; x.fillText(T.n,60,246);
+  x.font='bold 40px '+FONT; x.fillStyle='#ffd86b';
+  x.fillText('耐えた時間 '+fmtDur(L.dur)+'　追撃 '+L.follow+'回',60,324);
+  // 返信の吹き出し
+  let t=L.rep?L.rep.r.b.map(s=>s.charAt(0)==='#'?'【スタンプ】'+s.slice(1):s).join('\n'):'（返信は来なかった）';
+  x.font='36px '+FONT;
+  let lines=wrapLines(x,t,860).slice(0,4);
+  const bh=lines.length*50+40;
+  const by=370;
+  x.fillStyle='#ffffff';
+  const bw=940, bx=60, r=26;
+  x.beginPath(); x.moveTo(bx+r,by); x.lineTo(bx+bw-r,by); x.quadraticCurveTo(bx+bw,by,bx+bw,by+r);
+  x.lineTo(bx+bw,by+bh-r); x.quadraticCurveTo(bx+bw,by+bh,bx+bw-r,by+bh); x.lineTo(bx+r,by+bh);
+  x.quadraticCurveTo(bx,by+bh,bx,by+bh-r); x.lineTo(bx,by+r); x.quadraticCurveTo(bx,by,bx+r,by); x.closePath(); x.fill();
+  x.fillStyle='#23262b';
+  lines.forEach((ln,i)=>x.fillText(ln,bx+40,by+58+i*50));
+  x.font='26px '+FONT; x.fillStyle='#b9c6d2'; x.textAlign='right';
+  x.fillText('ゆううのゲームひろば',1140,596);
+  return c;
+}
+
+/* ============================================================
+   ボタン
+   ============================================================ */
+$('btnFollow').addEventListener('click',sendFollow);
+$('btnSpeed').addEventListener('click',()=>{
+  if(!G||G.over||G.replying) return;
+  G.speed=(G.speed===1)?3:1;
+  $('btnSpeed').textContent='早送り ×'+G.speed;
+});
+$('btnSleep').addEventListener('click',()=>{ if(G&&!G.over&&!G.replying) endGame('sleep'); });
+$('btnAgain').addEventListener('click',()=>{ if(LAST) startGame(SCENARIOS.indexOf(LAST.sc)); });
+$('btnMenu').addEventListener('click',()=>{ renderStart(); show('s-start'); });
+$('btnCopy').addEventListener('click',()=>{
+  const text=shareText();
+  const fallback=()=>{
+    const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{document.execCommand('copy'); toast('コピーしました');}catch(e){toast('コピーできませんでした');}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast('コピーしました'),fallback);
+  } else fallback();
+});
+$('btnSave').addEventListener('click',()=>{
+  try{
+    const c=drawCard();
+    c.toBlob(b=>{
+      if(!b){toast('保存できませんでした。画像を長押しで保存してください');return;}
+      const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='kidoku-surusu.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    },'image/png');
+  }catch(e){toast('保存できませんでした。画像を長押しで保存してください');}
+});
+
+renderStart();
+</script>
+</body>
+</html>
