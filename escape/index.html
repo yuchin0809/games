@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3分脱出・今日の部屋｜毎日変わる無料ブラウザ脱出ゲーム</title>
+<meta name="description" content="毎日違う部屋から3分以内に脱出する、無料のブラウザ脱出ゲーム。全員が同じ部屋に挑戦。クリアタイムをシェアして競おう。">
+<meta property="og:title" content="3分脱出・今日の部屋">
+<meta property="og:description" content="毎日変わる部屋から3分で脱出できる？クリアタイムをシェアしよう。">
+<style>
+  :root{--bg:#1f1a2e;--panel:#2c2540;--ink:#f6efe3;--sub:#b7aac9;--acc:#ffb84d;--ok:#4ecb8d;--ng:#ff6b6b}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;min-height:100vh}
+  .wrap{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+  h1{font-size:1.35rem;text-align:center}
+  .date{text-align:center;color:var(--sub);font-size:.85rem;margin-top:2px}
+  .card{background:var(--panel);border-radius:18px;padding:16px;margin-top:14px}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font-size:1.05rem;font-weight:700;background:var(--acc);color:#2a1d00;cursor:pointer;margin-top:12px;font-family:inherit}
+  .btn:active{transform:translateY(2px)}
+  .btn.sub{background:#3e3558;color:var(--ink);font-weight:500;font-size:.92rem;padding:10px}
+  .hide{display:none!important}
+  .top{display:flex;justify-content:space-between;align-items:center}
+  #timer{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+  #timer.low{color:var(--ng)}
+  .pen{color:var(--sub);font-size:.8rem}
+  .room{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .spot{background:#3a3153;border:2px solid #4a4068;border-radius:16px;padding:14px 4px;text-align:center;cursor:pointer;color:var(--ink);font-family:inherit}
+  .spot:active{transform:translateY(2px)}
+  .spot .em{font-size:2.2rem;display:block}
+  .spot .lb{font-size:.78rem;color:var(--sub)}
+  .spot.done{opacity:.55}
+  .view{min-height:150px;text-align:center}
+  .view .big{font-size:2.1rem;line-height:1.5;word-break:break-all}
+  .view p{margin-top:8px;font-size:.95rem}
+  .inv{margin-top:10px;font-size:.88rem;color:var(--sub)}
+  .code{display:flex;gap:10px;justify-content:center;margin-top:12px}
+  .code select{font-size:1.6rem;width:64px;height:60px;border-radius:12px;border:2px solid #4a4068;background:#241d38;color:var(--ink);text-align:center;text-align-last:center;font-family:inherit}
+  .msg{min-height:1.5em;margin-top:8px;font-size:.9rem;text-align:center}
+  .res h2{font-size:1.6rem;text-align:center}
+  .share{white-space:pre-wrap;background:#241d38;border-radius:12px;padding:12px;margin-top:12px;font-size:.92rem}
+  .small{font-size:.78rem;color:var(--sub);text-align:center;margin-top:18px}
+  .small a{color:var(--acc)}
+  svg{width:120px;height:120px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔐 3分脱出・今日の部屋</h1>
+  <p class="date" id="date"></p>
+
+  <div id="start" class="card">
+    <p>閉じ込められた部屋から、<b>3分以内</b>に脱出しよう。</p>
+    <p style="margin-top:8px;color:var(--sub);font-size:.9rem">部屋は毎日変わり、今日は全員が同じ部屋に挑戦します。タップして調べ、手がかりを集めて、金庫の3けたの番号を当てよう。ヒントは使えるけど、30秒のペナルティ。</p>
+    <p id="best" class="pen" style="margin-top:10px"></p>
+    <button class="btn" id="go">はじめる</button>
+  </div>
+
+  <div id="game" class="hide">
+    <div class="card">
+      <div class="top"><div id="timer">3:00</div><div class="pen" id="pen"></div></div>
+      <div class="room" id="room"></div>
+    </div>
+    <div class="card view" id="view"><p>気になる場所をタップして調べよう。</p></div>
+    <div class="inv" id="inv">持ち物：なし</div>
+    <button class="btn sub" id="hint">ヒントを見る（+30秒）</button>
+  </div>
+
+  <div id="result" class="card res hide">
+    <h2 id="rtitle"></h2>
+    <div class="share" id="share"></div>
+    <button class="btn" id="tweet">Xでシェアする</button>
+    <button class="btn sub" id="copy">コピーする</button>
+    <button class="btn sub" id="again">もう一度挑戦する</button>
+  </div>
+
+  <p class="small"><a href="../">ゆううのゲームひろば</a> ／ 部屋は毎日0時（日本時間）に変わります</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var JST=new Date(Date.now()+9*3600*1000);
+  var y=JST.getUTCFullYear(),m=JST.getUTCMonth()+1,d=JST.getUTCDate();
+  var dayKey=y*10000+m*100+d;
+  var dayLabel=m+"/"+d;
+  document.getElementById("date").textContent=y+"年"+m+"月"+d+"日の部屋";
+  var URL_="https://yuchin0809.github.io/games/escape/";
+
+  function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  var R=rng(dayKey*7919+13);
+  function ri(a,b){return a+Math.floor(R()*(b-a+1))}
+  function pick(a){return a[Math.floor(R()*a.length)]}
+  function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(R()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+  // ---- 今日の部屋を生成 ----
+  var srcs=["clock","paint","book"];
+  var order=shuffle(srcs);                       // 番号を並べる順
+  var digit={clock:ri(1,9),paint:ri(1,9),book:ri(1,7)};
+  var answer=order.map(function(k){return digit[k]}).join("");
+  var fruit=pick(["🍎","🍊","🍋","🍇","🍓","🍑"]);
+  var otherBooks=["📗","📘","📙"];
+  var books=[];
+  for(var i=0;i<digit.book;i++)books.push("📕");
+  var extra=ri(4,6);
+  for(var j=0;j<extra;j++)books.push(pick(otherBooks));
+  books=shuffle(books);
+  var name={clock:"時計",paint:"絵画",book:"本棚"};
+  var orderText=order.map(function(k){return name[k]}).join(" → ");
+
+  function clockSVG(h){
+    var a=h*30;
+    return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff6e0" stroke="#ffb84d" stroke-width="5"/>'
+      +'<line x1="50" y1="50" x2="50" y2="14" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/>'
+      +'<line x1="50" y1="50" x2="50" y2="28" stroke="#c0392b" stroke-width="5" stroke-linecap="round" transform="rotate('+a+' 50 50)"/>'
+      +'<circle cx="50" cy="50" r="4" fill="#2a1d00"/></svg>';
+  }
+
+  // ---- 状態 ----
+  var st;
+  var spots=[
+    {id:"vase",em:"🏺",lb:"壺"},
+    {id:"drawer",em:"🗄️",lb:"引き出し"},
+    {id:"safe",em:"🔒",lb:"金庫"},
+    {id:"clock",em:"🕰️",lb:"時計"},
+    {id:"paint",em:"🖼️",lb:"絵画"},
+    {id:"book",em:"📚",lb:"本棚"}
+  ];
+  var el=function(id){return document.getElementById(id)};
+  var timerId=null;
+
+  function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+  function elapsed(){return (Date.now()-st.t0)/1000+st.penalty}
+  function tick(){
+    var left=180-elapsed();
+    el("timer").textContent=fmt(left);
+    el("timer").className=left<30?"low":"";
+    if(left<=0)finish(false);
+  }
+  function setView(html){el("view").innerHTML=html}
+  function renderInv(){el("inv").textContent="持ち物："+(st.key?"🗝️ 小さな鍵":"なし")}
+  function renderRoom(){
+    el("room").innerHTML="";
+    spots.forEach(function(s){
+      var b=document.createElement("button");
+      b.className="spot"+(st.seen[s.id]?" done":"");
+      b.innerHTML='<span class="em">'+s.em+'</span><span class="lb">'+s.lb+'</span>';
+      b.onclick=function(){inspect(s.id)};
+      el("room").appendChild(b);
+    });
+  }
+  function inspect(id){
+    st.seen[id]=true;renderRoom();
+    if(id==="vase"){
+      if(!st.key){st.key=true;renderInv();setView('<div class="big">🏺🗝️</div><p>壺の中に小さな鍵が入っていた！</p>')}
+      else setView('<div class="big">🏺</div><p>もう空っぽだ。</p>');
+    }else if(id==="drawer"){
+      if(!st.key)setView('<div class="big">🗄️🔒</div><p>鍵がかかっている。</p>');
+      else{st.opened=true;setView('<div class="big">📜</div><p>引き出しが開いた。メモが入っている。</p><p><b>「金庫の番号は、<br>'+orderText+'<br>の数字の順に並べる」</b></p>')}
+    }else if(id==="clock"){
+      setView(clockSVG(digit.clock)+'<p>赤い短い針が、何かを指している…。</p>');
+    }else if(id==="paint"){
+      var f="";for(var i=0;i<digit.paint;i++)f+=fruit;
+      setView('<div class="big">'+f+'</div><p>絵画には果物がたくさん描かれている。</p>');
+    }else if(id==="book"){
+      setView('<div class="big">'+books.join("")+'</div><p>本が並んでいる。色に何か意味がありそうだ。</p>');
+    }else if(id==="safe"){
+      var sel="";
+      for(var k=0;k<3;k++){sel+='<select id="c'+k+'">';for(var n=0;n<=9;n++)sel+='<option>'+n+'</option>';sel+='</select>'}
+      setView('<div class="big">🔒</div><div class="code">'+sel+'</div><button class="btn" id="open">開ける</button><div class="msg" id="msg"></div>');
+      el("open").onclick=function(){
+        var v=el("c0").value+el("c1").value+el("c2").value;
+        if(v===answer)finish(true);
+        else{el("msg").style.color="var(--ng)";el("msg").textContent="開かない…。番号が違うようだ。"}
+      };
+    }
+  }
+  function hint(){
+    st.penalty+=30;st.hints++;el("pen").textContent="ヒント "+st.hints+"回（+"+(st.hints*30)+"秒）";
+    var t;
+    if(!st.key)t="まずは「壺」を調べてみよう。";
+    else if(!st.opened)t="鍵を使えるのは「引き出し」だ。";
+    else if(!st.seen.clock||!st.seen.paint||!st.seen.book)t="時計・絵画・本棚を、まだ調べていない。";
+    else t="時計は針が指す数、絵画は果物の数、本棚は赤い本（📕）の数。メモの順に並べて、金庫へ。";
+    setView('<div class="big">💡</div><p>'+t+'</p>');
+    tick();
+  }
+  function bestKey(){return "escape_best_"+dayKey}
+  function getBest(){try{return localStorage.getItem(bestKey())}catch(e){return null}}
+  function setBest(v){try{localStorage.setItem(bestKey(),v)}catch(e){}}
+  function start(){
+    st={t0:Date.now(),penalty:0,hints:0,key:false,opened:false,seen:{}};
+    el("start").classList.add("hide");el("result").classList.add("hide");el("game").classList.remove("hide");
+    el("pen").textContent="";renderRoom();renderInv();setView("<p>気になる場所をタップして調べよう。</p>");
+    tick();clearInterval(timerId);timerId=setInterval(tick,250);
+  }
+  var shareText="";
+  function finish(ok){
+    clearInterval(timerId);
+    var sec=Math.min(180,Math.round(elapsed()));
+    var tm=Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
+    el("game").classList.add("hide");el("result").classList.remove("hide");
+    if(ok){
+      el("rtitle").textContent="🔓 脱出成功！ "+tm;
+      var prev=getBest();if(!prev||sec<Number(prev))setBest(sec);
+      var bar="🗝️"+(st.hints?"💡".repeat(st.hints):"")+"🔢🔓";
+      shareText="3分脱出・今日の部屋 "+dayLabel+"\n🔓 "+tm+"で脱出（ヒント"+st.hints+"回）\n"+bar+"\n"+URL_+"\n#3分脱出";
+    }else{
+      el("rtitle").textContent="⏰ 時間切れ…";
+      shareText="3分脱出・今日の部屋 "+dayLabel+"\n⏰ 脱出ならず…\n🗝️🔒\nみんなは脱出できる？\n"+URL_+"\n#3分脱出";
+    }
+    el("share").textContent=shareText;
+  }
+  el("go").onclick=start;
+  el("hint").onclick=hint;
+  el("again").onclick=start;
+  el("tweet").onclick=function(){window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText),"_blank")};
+  el("copy").onclick=function(){
+    var done=function(){el("copy").textContent="コピーしました"};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(shareText).then(done,function(){});
+    else done();
+  };
+  var b=getBest();
+  if(b){var s=Number(b);el("best").textContent="今日のベスト："+Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+})();
+</script>
+</body>
+</html>
