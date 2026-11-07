@@ -58,7 +58,7 @@
   <div class="card">
     <canvas id="tw" class="twins" width="260" height="90" style="width:260px;height:90px"></canvas>
     <p style="text-align:center;margin-top:6px"><b>ミル</b>と<b>ミミ</b>が、知らない部屋に閉じ込められた！</p>
-    <p style="margin-top:10px;color:var(--sub);font-size:.88rem">2匹を<b>いれかえ</b>ボタンで切り替えて操作しよう。片方が<b>ボタン</b>の上に立つと、同じ色の<b>とびら</b>が開く。ふたりとも自分の<b>ゴール</b>に着いたら脱出成功。<br>制限時間は3分。</p>
+    <p style="margin-top:10px;color:var(--sub);font-size:.88rem">2匹を<b>いれかえ</b>ボタンで切り替えて操作しよう。片方が<b>ボタン</b>の上に立つと、同じ色の<b>とびら</b>が開く。ふたりとも自分の<b>ゴール</b>に着いたら脱出成功。<br>制限時間は4分。</p>
     <p id="best" class="pen" style="margin-top:8px"></p>
     <p id="rname" style="text-align:center;margin-top:8px;font-weight:700"></p>
     <button class="btn" id="go">はじめる</button>
@@ -68,7 +68,7 @@
 </div>
 
 <div id="game" class="scr hide">
-  <div class="hud"><div id="timer">3:00</div><div id="who"></div><button id="rst">やりなおし</button></div>
+  <div class="hud"><div id="timer">4:00</div><div id="who"></div><button id="rst">やりなおし</button></div>
   <div class="stage"><canvas id="cv" class="cv"></canvas></div>
   <div class="ctrl">
     <div id="hlp">矢印／WASDで移動・スペースでいれかえ・Rでやりなおし</div>
@@ -138,49 +138,58 @@ function solve(L,free,wantPath){
   var path=[],c=goal;while(c!==s0){path.push(c);c=prev[c]}path.reverse();return{d:dist[goal],path:path};
 }
 var THEMES=["書斎","寝室","キッチン","屋根裏","温室","地下室"];
+function evalL(g,M,Nn){
+  var L={g:g,M:M,N:Nn},sp=solve(L,0,true);if(sp.d<0)return -1;
+  var need=0,stand=0,i;
+  for(i=0;i<N;i++){var ch=g[i];if(ch>="A"&&ch<="C")need|=BIT[ch]}
+  for(var bit=1;bit<=4;bit<<=1){if(!(need&bit))continue;var dv=solve(L,bit);if(dv<0||dv>sp.d-4)return -1}
+  sp.path.forEach(function(s){var a=(s/N)|0,b=s%N;if(g[a]>="a"&&g[a]<="c")stand|=BIT[g[a]];if(g[b]>="a"&&g[b]<="c")stand|=BIT[g[b]]});
+  if((stand&need)!==need)return -1;
+  return sp.d;
+}
 function gen(seed){
-  for(var at=0;at<30000;at++){
+  var base=null;
+  for(var at=0;at<4000&&!base;at++){
     var r=rng(seed*1009+at*7919+5);
     var ri=function(a,b){return a+Math.floor(r()*(b-a+1))};
     var g=[];for(var i=0;i<N;i++){var x=i%W,y=(i/W)|0;g.push(x===0||y===0||x===W-1||y===H-1?"#":".")}
-    var k=ri(2,3),letters=["A","B","C"],doors=[],bad=false;
-    var used={h:[],v:[]};
+    var k=ri(2,3),letters=["A","B","C"],doors=[],bad=false,used={h:[],v:[]};
     for(var li=0;li<k;li++){
-      var hor=r()<.5,line=hor?ri(3,9):ri(3,6);
-      var lst=hor?used.h:used.v;if(lst.some(function(z){return Math.abs(z-line)<3})){bad=true;break}
-      lst.push(line);
-      var len=hor?W-2:H-2,gp=ri(1,len);
+      var hor=r()<.5,line=hor?ri(3,9):ri(3,6),lst=hor?used.h:used.v;
+      if(lst.some(function(z){return Math.abs(z-line)<3})){bad=true;break}
+      lst.push(line);var len=hor?W-2:H-2,gp=ri(1,len);
       for(var j=1;j<=len;j++){var idx=hor?line*W+j:j*W+line;if(j!==gp)g[idx]="#"}
       doors.push({hor:hor,line:line,gp:gp,L:letters[li]});
     }
     if(bad)continue;
     var ok=true;
-    doors.forEach(function(dd){var idx=dd.hor?dd.line*W+dd.gp:dd.gp*W+dd.line;
-      var a=dd.hor?idx-W:idx-1,b=dd.hor?idx+W:idx+1;
-      if(g[a]==="#"||g[b]==="#"||g[idx+ (dd.hor?1:W)]!=="#"&&false)ok=false;
-      g[idx]=dd.L});
+    doors.forEach(function(dd){var idx=dd.hor?dd.line*W+dd.gp:dd.gp*W+dd.line,a2=dd.hor?idx-W:idx-1,b2=dd.hor?idx+W:idx+1;if(g[a2]==="#"||g[b2]==="#")ok=false;g[idx]=dd.L});
     if(!ok)continue;
-    var free=function(){var t,n=0;do{t=ri(1,H-2)*W+ri(1,W-2);n++}while(g[t]!=="."&&n<200);return g[t]==="."?t:-1};
+    var fr=function(){var t,n=0;do{t=ri(1,H-2)*W+ri(1,W-2);n++}while(g[t]!=="."&&n<200);return g[t]==="."?t:-1};
     var fail=false;
-    doors.forEach(function(dd){var t=free();if(t<0){fail=true;return}g[t]=dd.L.toLowerCase()});
-    var M=free();if(M<0)continue;g[M]="M";var Nn=free();if(Nn<0)continue;g[Nn]="N";
-    var em=free(),en=free();if(em<0||en<0||fail)continue;g[em]="m";g[en]="n";
-    var nf=ri(8,14);
-    for(var f=0;f<nf;f++){var t=free();if(t>=0){g[t]="#";if(r()<.5){var t2=t+(r()<.5?1:W);if(g[t2]===".")g[t2]="#"}}}
+    doors.forEach(function(dd){var t=fr();if(t<0){fail=true;return}g[t]=dd.L.toLowerCase()});
+    var M=fr();if(M<0||fail)continue;g[M]="M";var Nn=fr();if(Nn<0)continue;g[Nn]="N";
+    var em=fr(),en=fr();if(em<0||en<0)continue;g[em]="m";g[en]="n";
+    var nf=ri(8,14);for(var f=0;f<nf;f++){var t=fr();if(t>=0){g[t]="#";if(r()<.5){var t2=t+(r()<.5?1:W);if(g[t2]===".")g[t2]="#"}}}
     g[M]=".";g[Nn]=".";
-    var L={g:g,M:M,N:Nn};
-    var d0=solve(L,0);if(d0<28||d0>150)continue;
-    var need=true;
-    for(var di=0;di<doors.length;di++){var dv=solve(L,BIT[doors[di].L]);if(dv<0||dv>=d0){need=false;break}}
-    if(!need)continue;
-    // 全部のボタンが必要か: 経路でそのボタンの上に誰かが立つか
-    var sp=solve(L,0,true),stand=0;
-    sp.path.forEach(function(s){var a=(s/N)|0,b=s%N;stand|=(g[a]>="a"&&g[a]<="c"?BIT[g[a]]:0)|(g[b]>="a"&&g[b]<="c"?BIT[g[b]]:0)});
-    var need2=0;doors.forEach(function(dd){need2|=BIT[dd.L]});
-    if((stand&need2)!==need2)continue;
-    return {g:g,M:M,N:Nn,d:d0,theme:THEMES[seed%6],tries:at+1,doors:doors.length};
+    var d=evalL(g,M,Nn);if(d>=20)base={g:g,M:M,N:Nn,d:d};
   }
-  return null;
+  if(!base)return null;
+  // 山登り：少しずつ配置を変えて、最短手数が長く(=難しく)なる方向へ
+  var r2=rng(seed*31+7),cur=base,curd=base.d;
+  for(var it=0;it<500&&curd<150;it++){
+    var g2=cur.g.slice(),M2=cur.M,N2=cur.N,op=r2(),x,y,t,tries=0;
+    var pickFree=function(){var q;do{q=(1+Math.floor(r2()*(H-2)))*W+1+Math.floor(r2()*(W-2));tries++}while((g2[q]!=="."||q===M2||q===N2)&&tries<100);return g2[q]==="."&&q!==M2&&q!==N2?q:-1};
+    if(op<.55){
+      var cells=[];for(var i2=0;i2<N;i2++){var c=g2[i2];if("abcmn".indexOf(c)>=0)cells.push(i2)}
+      cells.push(-1,-2);var pk=cells[Math.floor(r2()*cells.length)],dest=pickFree();if(dest<0)continue;
+      if(pk===-1)M2=dest;else if(pk===-2)N2=dest;else{g2[dest]=g2[pk];g2[pk]="."}
+    }else if(op<.8){var q=pickFree();if(q<0)continue;g2[q]="#"}
+    else{var wl=[];for(var i3=0;i3<N;i3++){var xx=i3%W,yy=(i3/W)|0;if(g2[i3]==="#"&&xx>0&&yy>0&&xx<W-1&&yy<H-1)wl.push(i3)}if(!wl.length)continue;g2[wl[Math.floor(r2()*wl.length)]]="."}
+    var d2=evalL(g2,M2,N2);
+    if(d2>=curd){cur={g:g2,M:M2,N:N2,d:d2};curd=d2}
+  }
+  return {g:cur.g,M:cur.M,N:cur.N,d:curd};
 }
 if(typeof module!=="undefined")module.exports={gen:gen,solve:solve,W:W,H:H};
 
@@ -342,7 +351,7 @@ window.addEventListener("resize",resize);
 function show(id){["start","game","edit","result"].forEach(function(k){$(k).classList.toggle("hide",k!==id)});resize()}
 function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
 function elapsed(){return (Date.now()-st.t0)/1000}
-function tick(){if(!st||finished)return;var l=180-elapsed();$("timer").textContent=fmt(l);$("timer").className=l<30?"low":"";if(l<=0)finish(false)}
+function tick(){if(!st||finished)return;var l=240-elapsed();$("timer").textContent=fmt(l);$("timer").className=l<30?"low":"";if(l<=0)finish(false)}
 function setWho(){var m=st.act===1;$("who").textContent="操作中："+(m?"ミミ":"ミル");$("who").style.color=m?"#ff9ec7":"#7fe3c4";$("swap").className=m?"":"mimi";$("swap").textContent="いれかえ\n→"+(m?"ミル":"ミミ")}
 function bestKey(L){return "esc3_best_"+(L.custom?"c"+(qs||"").slice(0,24):dayKey)}
 function getBest(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -353,7 +362,7 @@ function startLevel(L){
 }
 var shareText="";
 function finish(ok){
-  clearInterval(timerId);var sec=Math.min(180,Math.round(elapsed())),tm=fmt(sec);st=null;vec.x=vec.y=0;
+  clearInterval(timerId);var sec=Math.min(240,Math.round(elapsed())),tm=fmt(sec);st=null;vec.x=vec.y=0;
   var url=cur.custom?BASE+"?r="+qs:BASE;
   show("result");
   if(ok){$("rtitle").textContent="🔓 ふたりで脱出！ "+tm;
