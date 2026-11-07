@@ -2,225 +2,345 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>3分脱出・今日の部屋｜毎日変わる無料ブラウザ脱出ゲーム</title>
-<meta name="description" content="毎日違う部屋から3分以内に脱出する、無料のブラウザ脱出ゲーム。全員が同じ部屋に挑戦。クリアタイムをシェアして競おう。">
+<meta name="description" content="ミルを操作して部屋を歩き回り、3分以内に脱出しよう。部屋は毎日変わる無料のブラウザ脱出ゲーム。">
 <meta property="og:title" content="3分脱出・今日の部屋">
-<meta property="og:description" content="毎日変わる部屋から3分で脱出できる？クリアタイムをシェアしよう。">
+<meta property="og:description" content="ミルを操作して、毎日変わる部屋から3分で脱出できる？">
 <style>
   :root{--bg:#1f1a2e;--panel:#2c2540;--ink:#f6efe3;--sub:#b7aac9;--acc:#ffb84d;--ok:#4ecb8d;--ng:#ff6b6b}
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;min-height:100vh}
-  .wrap{max-width:520px;margin:0 auto;padding:16px 14px 40px}
-  h1{font-size:1.35rem;text-align:center}
-  .date{text-align:center;color:var(--sub);font-size:.85rem;margin-top:2px}
-  .card{background:var(--panel);border-radius:18px;padding:16px;margin-top:14px}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+  html,body{height:100%;overflow:hidden;touch-action:none}
+  body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.5}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:12px 12px 8px;overflow-y:auto;touch-action:pan-y}
+  .hide{display:none!important}
+  h1{font-size:1.3rem;text-align:center;margin-top:4px}
+  .card{background:var(--panel);border-radius:18px;padding:16px;margin-top:12px;width:100%;max-width:440px}
   .btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font-size:1.05rem;font-weight:700;background:var(--acc);color:#2a1d00;cursor:pointer;margin-top:12px;font-family:inherit}
   .btn:active{transform:translateY(2px)}
   .btn.sub{background:#3e3558;color:var(--ink);font-weight:500;font-size:.92rem;padding:10px}
-  .hide{display:none!important}
-  .top{display:flex;justify-content:space-between;align-items:center}
-  #timer{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.04em}
-  #timer.low{color:var(--ng)}
   .pen{color:var(--sub);font-size:.8rem}
-  .room{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-  .spot{background:#3a3153;border:2px solid #4a4068;border-radius:16px;padding:14px 4px;text-align:center;cursor:pointer;color:var(--ink);font-family:inherit}
-  .spot:active{transform:translateY(2px)}
-  .spot .em{font-size:2.2rem;display:block}
-  .spot .lb{font-size:.78rem;color:var(--sub)}
-  .spot.done{opacity:.55}
-  .view{min-height:150px;text-align:center}
-  .view .big{font-size:2.1rem;line-height:1.5;word-break:break-all}
-  .view p{margin-top:8px;font-size:.95rem}
-  .inv{margin-top:10px;font-size:.88rem;color:var(--sub)}
-  .code{display:flex;gap:10px;justify-content:center;margin-top:12px}
-  .code select{font-size:1.6rem;width:64px;height:60px;border-radius:12px;border:2px solid #4a4068;background:#241d38;color:var(--ink);text-align:center;text-align-last:center;font-family:inherit}
-  .msg{min-height:1.5em;margin-top:8px;font-size:.9rem;text-align:center}
-  .res h2{font-size:1.6rem;text-align:center}
-  .share{white-space:pre-wrap;background:#241d38;border-radius:12px;padding:12px;margin-top:12px;font-size:.92rem}
-  .small{font-size:.78rem;color:var(--sub);text-align:center;margin-top:18px}
+  #mil{display:block;margin:4px auto 0}
+  /* game */
+  #game{padding:6px 0 0;justify-content:flex-start;overflow:hidden;touch-action:none}
+  .hud{width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;padding:0 12px}
+  #timer{font-size:1.9rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+  #timer.low{color:var(--ng)}
+  #inv{font-size:.85rem;color:var(--sub);text-align:right}
+  .stage{position:relative;margin-top:4px}
+  #cv{display:block;border-radius:14px;background:#000}
+  #panel{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(28,22,44,.97);border:2px solid #5a4d80;border-radius:16px;padding:12px;text-align:center;max-height:92%;overflow:auto}
+  #panel .big{font-size:1.9rem;line-height:1.45;word-break:break-all}
+  #panel p{font-size:.9rem;margin-top:6px}
+  #panel svg{width:110px;height:110px}
+  .code{display:flex;gap:12px;justify-content:center;margin-top:8px}
+  .dg{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .dg button{width:56px;height:34px;border:0;border-radius:10px;background:#3e3558;color:var(--ink);font-size:1.1rem;font-family:inherit}
+  .dg b{font-size:2rem;width:56px;text-align:center;background:#241d38;border-radius:10px}
+  .row{display:flex;gap:8px;margin-top:8px}
+  .row .btn{margin-top:0;padding:10px;font-size:.95rem}
+  .msg{min-height:1.4em;font-size:.88rem;margin-top:4px}
+  .ctrl{position:relative;width:100%;max-width:440px;flex:1;min-height:120px}
+  #stick{position:absolute;right:14px;bottom:10px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);touch-action:none}
+  #knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,184,77,.9);box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  #act{position:absolute;left:18px;bottom:26px;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:var(--ink);font-size:.95rem;font-weight:800;font-family:inherit;touch-action:none}
+  #act.on{background:var(--acc);color:#2a1d00;border-color:#fff;box-shadow:0 0 0 6px rgba(255,184,77,.3)}
+  #hint{position:absolute;right:14px;top:4px;border:0;border-radius:10px;background:#3e3558;color:var(--ink);font-size:.78rem;padding:6px 10px;font-family:inherit}
+  #hlp{display:none;position:absolute;left:14px;right:150px;top:6px;text-align:left;font-size:.72rem;color:var(--sub)}
+  @media (hover:hover) and (pointer:fine){#hlp{display:block}}
+  .share{white-space:pre-wrap;background:#241d38;border-radius:12px;padding:12px;margin-top:12px;font-size:.92rem;-webkit-user-select:text;user-select:text}
+  .small{font-size:.78rem;color:var(--sub);text-align:center;margin:16px 0 8px}
   .small a{color:var(--acc)}
-  svg{width:120px;height:120px}
+  .res h2{font-size:1.6rem;text-align:center}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>🔐 3分脱出・今日の部屋</h1>
-  <p class="date" id="date"></p>
 
-  <div id="start" class="card">
-    <p>閉じ込められた部屋から、<b>3分以内</b>に脱出しよう。</p>
-    <p style="margin-top:8px;color:var(--sub);font-size:.9rem">部屋は毎日変わり、今日は全員が同じ部屋に挑戦します。タップして調べ、手がかりを集めて、金庫の3けたの番号を当てよう。ヒントは使えるけど、30秒のペナルティ。</p>
-    <p id="best" class="pen" style="margin-top:10px"></p>
+<div id="start" class="scr">
+  <h1>🔐 3分脱出・今日の部屋</h1>
+  <p class="pen" id="date" style="text-align:center"></p>
+  <div class="card">
+    <canvas id="mil" width="120" height="120" style="width:120px;height:120px"></canvas>
+    <p style="text-align:center;margin-top:4px"><b>ミル</b>が、知らない部屋に閉じ込められた！</p>
+    <p style="margin-top:10px;color:var(--sub);font-size:.9rem">スティックで部屋を歩き回って、気になる場所に近づいたら<b>しらべる</b>ボタン。手がかりを集めて、金庫の3けたの番号を当てて<b>3分以内</b>に脱出しよう。部屋は毎日変わって、今日は全員が同じ部屋です。</p>
+    <p id="best" class="pen" style="margin-top:8px"></p>
     <button class="btn" id="go">はじめる</button>
   </div>
+  <p class="small"><a href="../">ゆううのゲームひろば</a> ／ 部屋は毎日0時（日本時間）に変わります</p>
+</div>
 
-  <div id="game" class="hide">
-    <div class="card">
-      <div class="top"><div id="timer">3:00</div><div class="pen" id="pen"></div></div>
-      <div class="room" id="room"></div>
-    </div>
-    <div class="card view" id="view"><p>気になる場所をタップして調べよう。</p></div>
-    <div class="inv" id="inv">持ち物：なし</div>
-    <button class="btn sub" id="hint">ヒントを見る（+30秒）</button>
+<div id="game" class="scr hide">
+  <div class="hud"><div id="timer">3:00</div><div id="inv">持ち物：なし</div></div>
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div id="panel" class="hide"></div>
   </div>
+  <div class="ctrl">
+    <button id="hint">ヒント（+30秒）</button>
+    <div id="hlp">スティック／矢印キーで移動・Aキー／スペースで調べる</div>
+    <button id="act">しらべる</button>
+    <div id="stick"><div id="knob"></div></div>
+  </div>
+</div>
 
-  <div id="result" class="card res hide">
+<div id="result" class="scr hide">
+  <div class="card res">
     <h2 id="rtitle"></h2>
     <div class="share" id="share"></div>
     <button class="btn" id="tweet">Xでシェアする</button>
     <button class="btn sub" id="copy">コピーする</button>
     <button class="btn sub" id="again">もう一度挑戦する</button>
   </div>
-
-  <p class="small"><a href="../">ゆううのゲームひろば</a> ／ 部屋は毎日0時（日本時間）に変わります</p>
+  <p class="small"><a href="../">ゆううのゲームひろば</a></p>
 </div>
 
 <script>
 (function(){
   "use strict";
+  var $=function(id){return document.getElementById(id)};
   var JST=new Date(Date.now()+9*3600*1000);
-  var y=JST.getUTCFullYear(),m=JST.getUTCMonth()+1,d=JST.getUTCDate();
-  var dayKey=y*10000+m*100+d;
-  var dayLabel=m+"/"+d;
-  document.getElementById("date").textContent=y+"年"+m+"月"+d+"日の部屋";
+  var y=JST.getUTCFullYear(),mo=JST.getUTCMonth()+1,dd=JST.getUTCDate();
+  var dayKey=y*10000+mo*100+dd,dayLabel=mo+"/"+dd;
+  $("date").textContent=y+"年"+mo+"月"+dd+"日の部屋";
   var URL_="https://yuchin0809.github.io/games/escape/";
 
-  function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   var R=rng(dayKey*7919+13);
   function ri(a,b){return a+Math.floor(R()*(b-a+1))}
   function pick(a){return a[Math.floor(R()*a.length)]}
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(R()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 
-  // ---- 今日の部屋を生成 ----
-  var srcs=["clock","paint","book"];
-  var order=shuffle(srcs);                       // 番号を並べる順
+  /* ===== 今日の部屋 ===== */
+  var W=320,H=400,WALL=84;
+  var themes=[
+    {f1:"#d9b98a",f2:"#cba877",w:"#7a5c9e",wl:"#8f72b3"},
+    {f1:"#a8c9d8",f2:"#98bccc",w:"#496b8a",wl:"#5e83a3"},
+    {f1:"#c9d8a8",f2:"#bccc98",w:"#5d7a49",wl:"#74935c"},
+    {f1:"#e0b4b4",f2:"#d3a5a5",w:"#8a4a56",wl:"#a35e6b"}
+  ];
+  var theme=pick(themes);
+  var order=shuffle(["clock","paint","book"]);
   var digit={clock:ri(1,9),paint:ri(1,9),book:ri(1,7)};
   var answer=order.map(function(k){return digit[k]}).join("");
   var fruit=pick(["🍎","🍊","🍋","🍇","🍓","🍑"]);
-  var otherBooks=["📗","📘","📙"];
-  var books=[];
-  for(var i=0;i<digit.book;i++)books.push("📕");
-  var extra=ri(4,6);
-  for(var j=0;j<extra;j++)books.push(pick(otherBooks));
+  var books=[];for(var i=0;i<digit.book;i++)books.push("📕");
+  var ex=ri(4,6);for(var j=0;j<ex;j++)books.push(pick(["📗","📘","📙"]));
   books=shuffle(books);
-  var name={clock:"時計",paint:"絵画",book:"本棚"};
-  var orderText=order.map(function(k){return name[k]}).join(" → ");
+  var nm={clock:"時計",paint:"絵画",book:"本棚",vase:"壺",drawer:"引き出し",safe:"金庫"};
+  var orderText=order.map(function(k){return nm[k]}).join(" → ");
+  var wallSlots=shuffle([60,160,260]), wallIds=shuffle(["clock","paint","book"]);
+  var floorSlots=shuffle([[46,185],[272,250],[70,330]]), floorIds=shuffle(["vase","drawer","safe"]);
+  var items=[];
+  wallIds.forEach(function(id,i){items.push({id:id,wall:true,x:wallSlots[i],y:WALL,ix:wallSlots[i],iy:WALL+18})});
+  floorIds.forEach(function(id,i){items.push({id:id,wall:false,x:floorSlots[i][0],y:floorSlots[i][1],ix:floorSlots[i][0],iy:floorSlots[i][1]})});
+  var table={x:130,y:215,w:64,h:38};
+  function region(it){var h=it.x<110?"左":(it.x>210?"右":"中央"),v=it.y<120?"上":(it.y>260?"下":"");return h==="中央"&&v===""?"中央":(h==="中央"?"中央"+v:h+v)}
 
-  function clockSVG(h){
-    var a=h*30;
-    return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff6e0" stroke="#ffb84d" stroke-width="5"/>'
-      +'<line x1="50" y1="50" x2="50" y2="14" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/>'
-      +'<line x1="50" y1="50" x2="50" y2="28" stroke="#c0392b" stroke-width="5" stroke-linecap="round" transform="rotate('+a+' 50 50)"/>'
-      +'<circle cx="50" cy="50" r="4" fill="#2a1d00"/></svg>';
-  }
+  /* ===== 状態 ===== */
+  var st=null,timerId=null,raf=0,last=0,panelOpen=false;
+  var pl={x:160,y:300,r:10,dir:1,anim:0,moving:false};
+  var vec={x:0,y:0},keys={};
 
-  // ---- 状態 ----
-  var st;
-  var spots=[
-    {id:"vase",em:"🏺",lb:"壺"},
-    {id:"drawer",em:"🗄️",lb:"引き出し"},
-    {id:"safe",em:"🔒",lb:"金庫"},
-    {id:"clock",em:"🕰️",lb:"時計"},
-    {id:"paint",em:"🖼️",lb:"絵画"},
-    {id:"book",em:"📚",lb:"本棚"}
-  ];
-  var el=function(id){return document.getElementById(id)};
-  var timerId=null;
+  /* ===== キャラ「ミル」 ===== */
+  function drawMil(c,x,y,s,dir,anim,moving,key){
+    c.save();c.translate(x,y);c.scale(s,s);
+    var bob=moving?Math.sin(anim*14)*1.6:Math.sin(anim*3)*.6;
+    c.fillStyle="rgba(0,0,0,.28)";c.beginPath();c.ellipse(0,12,11,4.5,0,0,7);c.fill();
+    var fs=moving?Math.sin(anim*14)*3:0;
+    c.fillStyle="#3aa88a";c.beginPath();c.ellipse(-5,11,4,3,0,0,7);c.ellipse(5,11,4,3,0,0,7);c.fill();
+    c.translate(0,bob);
+    c.fillStyle="#7fe3c4";c.beginPath();c.arc(0,0,12,0,7);c.fill();
+    c.fillStyle="#b5f3dd";c.beginPath();c.ellipse(0,4,8,6,0,0,7);c.fill();
+    c.fillStyle="#ff6b6b";c.fillRect(-10,4,20,3.5);c.beginPath();c.arc(8,8,3,0,7);c.fill();
+    c.strokeStyle="#3aa88a";c.lineWidth=2;c.beginPath();c.moveTo(0,-11);c.quadraticCurveTo(0,-17,4,-18);c.stroke();
+    c.fillStyle="#5fd35a";c.beginPath();c.ellipse(6,-18,5,2.6,-.5,0,7);c.fill();
+    var ox=dir*2.4;
+    c.fillStyle="#fff";c.beginPath();c.arc(-4.5+ox,-3,3.6,0,7);c.arc(4.5+ox,-3,3.6,0,7);c.fill();
+    c.fillStyle="#222";c.beginPath();c.arc(-4.5+ox*1.6,-3,1.7,0,7);c.arc(4.5+ox*1.6,-3,1.7,0,7);c.fill();
+    c.fillStyle="#ff9aa8";c.beginPath();c.arc(-8,1.6,1.8,0,7);c.arc(8,1.6,1.8,0,7);c.fill();
+    if(key){c.fillStyle="#ffd23f";c.beginPath();c.arc(0,-26,3.2,0,7);c.fill();c.fillRect(-.8,-23,1.6,6)}
+    c.restore();
+  }
+  (function(){var c=$("mil").getContext("2d");c.scale(1,1);drawMil(c,60,62,3.2,1,0,false,false)})();
 
-  function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
-  function elapsed(){return (Date.now()-st.t0)/1000+st.penalty}
-  function tick(){
-    var left=180-elapsed();
-    el("timer").textContent=fmt(left);
-    el("timer").className=left<30?"low":"";
-    if(left<=0)finish(false);
+  /* ===== 描画 ===== */
+  var cv=$("cv"),cx=cv.getContext("2d"),dpr=Math.min(window.devicePixelRatio||1,2);
+  function resize(){
+    var avail=window.innerHeight-60-150;var h=Math.min(avail,window.innerWidth*1.25-6,560);h=Math.max(h,260);var w=h*0.8;
+    cv.style.width=w+"px";cv.style.height=h+"px";cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
   }
-  function setView(html){el("view").innerHTML=html}
-  function renderInv(){el("inv").textContent="持ち物："+(st.key?"🗝️ 小さな鍵":"なし")}
-  function renderRoom(){
-    el("room").innerHTML="";
-    spots.forEach(function(s){
-      var b=document.createElement("button");
-      b.className="spot"+(st.seen[s.id]?" done":"");
-      b.innerHTML='<span class="em">'+s.em+'</span><span class="lb">'+s.lb+'</span>';
-      b.onclick=function(){inspect(s.id)};
-      el("room").appendChild(b);
-    });
-  }
-  function inspect(id){
-    st.seen[id]=true;renderRoom();
-    if(id==="vase"){
-      if(!st.key){st.key=true;renderInv();setView('<div class="big">🏺🗝️</div><p>壺の中に小さな鍵が入っていた！</p>')}
-      else setView('<div class="big">🏺</div><p>もう空っぽだ。</p>');
-    }else if(id==="drawer"){
-      if(!st.key)setView('<div class="big">🗄️🔒</div><p>鍵がかかっている。</p>');
-      else{st.opened=true;setView('<div class="big">📜</div><p>引き出しが開いた。メモが入っている。</p><p><b>「金庫の番号は、<br>'+orderText+'<br>の数字の順に並べる」</b></p>')}
-    }else if(id==="clock"){
-      setView(clockSVG(digit.clock)+'<p>赤い短い針が、何かを指している…。</p>');
+  window.addEventListener("resize",resize);
+
+  function drawItem(c,it){
+    var x=it.x,y=it.y,id=it.id;
+    if(id==="clock"){
+      c.fillStyle="#fff6e0";c.strokeStyle="#6b4a1f";c.lineWidth=4;c.beginPath();c.arc(x,y-34,22,0,7);c.fill();c.stroke();
+      c.strokeStyle="#2a1d00";c.lineWidth=2;c.beginPath();c.moveTo(x,y-34);c.lineTo(x,y-50);c.stroke();
+      c.beginPath();c.moveTo(x,y-34);c.lineTo(x+8,y-26);c.stroke();
     }else if(id==="paint"){
-      var f="";for(var i=0;i<digit.paint;i++)f+=fruit;
-      setView('<div class="big">'+f+'</div><p>絵画には果物がたくさん描かれている。</p>');
+      c.fillStyle="#6b4a1f";c.fillRect(x-30,y-64,60,46);c.fillStyle="#e8f1d4";c.fillRect(x-25,y-59,50,36);
+      c.fillStyle="#8cc084";c.beginPath();c.moveTo(x-25,y-23);c.lineTo(x-8,y-44);c.lineTo(x+6,y-30);c.lineTo(x+14,y-38);c.lineTo(x+25,y-23);c.fill();
+      c.fillStyle="#ffd23f";c.beginPath();c.arc(x+14,y-50,5,0,7);c.fill();
     }else if(id==="book"){
-      setView('<div class="big">'+books.join("")+'</div><p>本が並んでいる。色に何か意味がありそうだ。</p>');
+      c.fillStyle="#5a3b1a";c.fillRect(x-36,y-72,72,70);c.fillStyle="#3b2610";c.fillRect(x-32,y-68,64,28);c.fillRect(x-32,y-36,64,28);
+      var cols=["#c0392b","#2e86c1","#27ae60","#e67e22","#8e44ad"];
+      for(var r=0;r<2;r++)for(var k=0;k<8;k++){c.fillStyle=cols[(k*3+r*2)%5];c.fillRect(x-30+k*7.6,y-66+r*32,6,24)}
+    }else if(id==="vase"){
+      c.fillStyle="rgba(0,0,0,.25)";c.beginPath();c.ellipse(x,y+16,16,6,0,0,7);c.fill();
+      c.fillStyle="#c97b45";c.beginPath();c.moveTo(x-8,y-14);c.quadraticCurveTo(x-20,y+4,x-10,y+16);c.lineTo(x+10,y+16);c.quadraticCurveTo(x+20,y+4,x+8,y-14);c.closePath();c.fill();
+      c.fillStyle="#a8602f";c.fillRect(x-9,y-18,18,6);c.fillStyle="#e8a56d";c.fillRect(x-12,y-4,24,4);
+    }else if(id==="drawer"){
+      c.fillStyle="rgba(0,0,0,.25)";c.beginPath();c.ellipse(x,y+22,26,7,0,0,7);c.fill();
+      c.fillStyle="#7b4b24";c.fillRect(x-24,y-22,48,44);c.fillStyle="#9a6232";c.fillRect(x-24,y-22,48,8);
+      c.fillStyle="#6a3e1c";c.fillRect(x-20,y-10,40,14);c.fillRect(x-20,y+6,40,13);
+      c.fillStyle="#ffd23f";c.fillRect(x-4,y-5,8,4);c.fillRect(x-4,y+11,8,4);
     }else if(id==="safe"){
-      var sel="";
-      for(var k=0;k<3;k++){sel+='<select id="c'+k+'">';for(var n=0;n<=9;n++)sel+='<option>'+n+'</option>';sel+='</select>'}
-      setView('<div class="big">🔒</div><div class="code">'+sel+'</div><button class="btn" id="open">開ける</button><div class="msg" id="msg"></div>');
-      el("open").onclick=function(){
-        var v=el("c0").value+el("c1").value+el("c2").value;
-        if(v===answer)finish(true);
-        else{el("msg").style.color="var(--ng)";el("msg").textContent="開かない…。番号が違うようだ。"}
-      };
+      c.fillStyle="rgba(0,0,0,.25)";c.beginPath();c.ellipse(x,y+22,26,7,0,0,7);c.fill();
+      c.fillStyle="#5d6770";c.fillRect(x-24,y-24,48,46);c.fillStyle="#7d8892";c.fillRect(x-20,y-20,40,38);
+      c.fillStyle="#3c444b";c.beginPath();c.arc(x,y-1,10,0,7);c.fill();c.fillStyle="#ffb84d";c.beginPath();c.arc(x,y-1,4,0,7);c.fill();
+      c.fillStyle="#3c444b";c.fillRect(x+13,y-2,5,6);
     }
   }
+  function render(){
+    var sc=cv.width/W;cx.setTransform(sc,0,0,sc,0,0);
+    for(var ty=0;ty<H/32+1;ty++)for(var tx=0;tx<W/32;tx++){cx.fillStyle=(tx+ty)%2?theme.f1:theme.f2;cx.fillRect(tx*32,ty*32,32,32)}
+    cx.fillStyle=theme.w;cx.fillRect(0,0,W,WALL);cx.fillStyle=theme.wl;cx.fillRect(0,WALL-10,W,10);cx.fillStyle="rgba(0,0,0,.18)";cx.fillRect(0,WALL,W,5);
+    cx.fillStyle="rgba(255,255,255,.22)";cx.beginPath();cx.ellipse(160,300,92,46,0,0,7);cx.fill();
+    cx.fillStyle="#8a5a2b";cx.fillRect(table.x,table.y,table.w,table.h);cx.fillStyle="#a8723a";cx.fillRect(table.x,table.y,table.w,6);
+    cx.fillStyle="#ffd23f";cx.beginPath();cx.arc(table.x+14,table.y+20,5,0,7);cx.fill();cx.fillStyle="#fff";cx.fillRect(table.x+32,table.y+14,16,10);
+    var ds=items.slice().sort(function(a,b){return a.y-b.y}),drawnP=false;
+    ds.forEach(function(it){
+      if(!drawnP&&it.y>pl.y&&!it.wall){drawMil(cx,pl.x,pl.y,1,pl.dir,pl.anim,pl.moving,st&&st.key);drawnP=true}
+      drawItem(cx,it);
+      if(near===it&&!panelOpen){cx.strokeStyle="rgba(255,184,77,.95)";cx.lineWidth=2.5;cx.beginPath();cx.arc(it.wall?it.x:it.x,it.wall?it.y-30:it.y,34,0,7);cx.stroke()}
+    });
+    if(!drawnP)drawMil(cx,pl.x,pl.y,1,pl.dir,pl.anim,pl.moving,st&&st.key);
+    cx.fillStyle="rgba(0,0,0,.35)";cx.fillRect(0,0,W,3);
+  }
+
+  /* ===== 更新 ===== */
+  var near=null;
+  function blocked(nx,ny){
+    if(nx<pl.r||nx>W-pl.r||ny<WALL+pl.r-4||ny>H-pl.r)return true;
+    if(nx+pl.r>table.x&&nx-pl.r<table.x+table.w&&ny+pl.r>table.y&&ny-pl.r<table.y+table.h)return true;
+    for(var i=0;i<items.length;i++){var it=items[i];if(it.wall)continue;if(Math.abs(nx-it.x)<24+pl.r-2&&Math.abs(ny-it.y)<22+pl.r-2)return true}
+    return false;
+  }
+  function step(dt){
+    var vx=vec.x,vy=vec.y;
+    if(keys.ArrowLeft||keys.a)vx-=1;if(keys.ArrowRight||keys.d)vx+=1;if(keys.ArrowUp||keys.w)vy-=1;if(keys.ArrowDown||keys.s)vy+=1;
+    var m=Math.hypot(vx,vy);if(m>1){vx/=m;vy/=m}
+    pl.moving=m>.12&&!panelOpen;
+    if(pl.moving){
+      var sp=96*dt;var nx=pl.x+vx*sp,ny=pl.y+vy*sp;
+      if(!blocked(nx,pl.y))pl.x=nx;if(!blocked(pl.x,ny))pl.y=ny;
+      if(Math.abs(vx)>.2)pl.dir=vx>0?1:-1;pl.anim+=dt;
+    }else pl.anim+=dt*.4;
+    near=null;var best=1e9;
+    items.forEach(function(it){var d=Math.hypot(pl.x-it.ix,pl.y-it.iy);if(d<46&&d<best){best=d;near=it}});
+    $("act").className=near&&!panelOpen?"on":"";
+  }
+  function loop(t){
+    var dt=Math.min(.05,(t-last)/1000||0);last=t;
+    if(st){step(dt);render()}
+    raf=requestAnimationFrame(loop);
+  }
+
+  /* ===== パネル ===== */
+  function clockSVG(h){var a=h*30;return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff6e0" stroke="#ffb84d" stroke-width="5"/><line x1="50" y1="50" x2="50" y2="14" stroke="#2a1d00" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="50" x2="50" y2="28" stroke="#c0392b" stroke-width="5" stroke-linecap="round" transform="rotate('+a+' 50 50)"/><circle cx="50" cy="50" r="4" fill="#2a1d00"/></svg>'}
+  function openPanel(html){panelOpen=true;var p=$("panel");p.innerHTML=html+'<div class="row"><button class="btn sub" id="pc">とじる</button></div>';p.classList.remove("hide");$("pc").onclick=closePanel;$("act").className=""}
+  function closePanel(){panelOpen=false;$("panel").classList.add("hide")}
+  function inv(){$("inv").textContent="持ち物："+(st.key?"🗝️ 小さな鍵":"なし")}
+  function inspect(it){
+    var id=it.id;
+    if(id==="vase"){
+      if(!st.key){st.key=true;inv();openPanel('<div class="big">🏺🗝️</div><p>壺の中に小さな鍵が入っていた！</p>')}
+      else openPanel('<div class="big">🏺</div><p>もう空っぽだ。</p>');
+    }else if(id==="drawer"){
+      if(!st.key)openPanel('<div class="big">🗄️🔒</div><p>鍵がかかっている。</p>');
+      else{st.opened=true;openPanel('<div class="big">📜</div><p>引き出しが開いた。メモが入っている。</p><p><b>「金庫の番号は、<br>'+orderText+'<br>の数字の順に並べる」</b></p>')}
+    }else if(id==="clock"){st.seen.clock=1;openPanel(clockSVG(digit.clock)+'<p>赤い短い針が、何かを指している…。</p>')}
+    else if(id==="paint"){st.seen.paint=1;var f="";for(var i=0;i<digit.paint;i++)f+=fruit;openPanel('<div class="big">'+f+'</div><p>絵画には果物がたくさん描かれている。</p>')}
+    else if(id==="book"){st.seen.book=1;openPanel('<div class="big">'+books.join("")+'</div><p>本が並んでいる。色に何か意味がありそうだ。</p>')}
+    else if(id==="safe"){
+      var v=[0,0,0],h='<div class="code">';
+      for(var k=0;k<3;k++)h+='<div class="dg"><button data-k="'+k+'" data-d="1">▲</button><b id="d'+k+'">0</b><button data-k="'+k+'" data-d="-1">▼</button></div>';
+      h+='</div><div class="msg" id="msg"></div><button class="btn" id="open" style="margin-top:6px;padding:10px">開ける</button>';
+      openPanel('<p><b>金庫</b>：3けたの番号を合わせよう</p>'+h);
+      $("panel").onclick=function(e){var b=e.target;if(b.dataset&&b.dataset.k!==undefined){var k=+b.dataset.k;v[k]=(v[k]+Number(b.dataset.d)+10)%10;$("d"+k).textContent=v[k]}};
+      $("open").onclick=function(){if(v.join("")===answer)finish(true);else{$("msg").style.color="var(--ng)";$("msg").textContent="開かない…。番号が違うようだ。"}};
+    }
+  }
+  function doAct(){if(!st||panelOpen)return;if(near)inspect(near)}
+
   function hint(){
-    st.penalty+=30;st.hints++;el("pen").textContent="ヒント "+st.hints+"回（+"+(st.hints*30)+"秒）";
+    if(!st||panelOpen)return;
+    st.penalty+=30;st.hints++;
+    var by={};items.forEach(function(it){by[it.id]=it});
     var t;
-    if(!st.key)t="まずは「壺」を調べてみよう。";
-    else if(!st.opened)t="鍵を使えるのは「引き出し」だ。";
-    else if(!st.seen.clock||!st.seen.paint||!st.seen.book)t="時計・絵画・本棚を、まだ調べていない。";
-    else t="時計は針が指す数、絵画は果物の数、本棚は赤い本（📕）の数。メモの順に並べて、金庫へ。";
-    setView('<div class="big">💡</div><p>'+t+'</p>');
+    if(!st.key)t="まずは「壺」を調べよう。"+region(by.vase)+"あたりにあるよ。";
+    else if(!st.opened)t="鍵は「引き出し」で使えるよ。"+region(by.drawer)+"あたり。";
+    else if(!(st.seen.clock&&st.seen.paint&&st.seen.book)){var m=["clock","paint","book"].filter(function(k){return!st.seen[k]})[0];t="まだ「"+nm[m]+"」を調べていない。"+region(by[m])+"あたり。"}
+    else t="時計は針が指す数、絵画は果物の数、本棚は赤い本（📕）の数。メモの順に並べて、"+region(by.safe)+"の金庫へ。";
+    openPanel('<div class="big">💡</div><p>'+t+'</p><p class="pen">ヒント '+st.hints+'回（+'+(st.hints*30)+'秒）</p>');
     tick();
   }
-  function bestKey(){return "escape_best_"+dayKey}
-  function getBest(){try{return localStorage.getItem(bestKey())}catch(e){return null}}
-  function setBest(v){try{localStorage.setItem(bestKey(),v)}catch(e){}}
+
+  /* ===== 進行 ===== */
+  function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+  function elapsed(){return (Date.now()-st.t0)/1000+st.penalty}
+  function tick(){if(!st)return;var l=180-elapsed();$("timer").textContent=fmt(l);$("timer").className=l<30?"low":"";if(l<=0)finish(false)}
+  function bk(){return "escape2_best_"+dayKey}
+  function getBest(){try{return localStorage.getItem(bk())}catch(e){return null}}
+  function setBest(v){try{localStorage.setItem(bk(),v)}catch(e){}}
+  function show(id){["start","game","result"].forEach(function(k){$(k).classList.toggle("hide",k!==id)})}
   function start(){
     st={t0:Date.now(),penalty:0,hints:0,key:false,opened:false,seen:{}};
-    el("start").classList.add("hide");el("result").classList.add("hide");el("game").classList.remove("hide");
-    el("pen").textContent="";renderRoom();renderInv();setView("<p>気になる場所をタップして調べよう。</p>");
-    tick();clearInterval(timerId);timerId=setInterval(tick,250);
+    pl.x=160;pl.y=310;pl.dir=1;vec.x=vec.y=0;closePanel();show("game");resize();inv();tick();
+    clearInterval(timerId);timerId=setInterval(tick,250);
   }
   var shareText="";
   function finish(ok){
-    clearInterval(timerId);
-    var sec=Math.min(180,Math.round(elapsed()));
-    var tm=Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
-    el("game").classList.add("hide");el("result").classList.remove("hide");
+    clearInterval(timerId);closePanel();
+    var sec=Math.min(180,Math.round(elapsed()));var tm=Math.floor(sec/60)+":"+("0"+(sec%60)).slice(-2);
+    var hs=st.hints;st=null;vec.x=vec.y=0;show("result");
     if(ok){
-      el("rtitle").textContent="🔓 脱出成功！ "+tm;
-      var prev=getBest();if(!prev||sec<Number(prev))setBest(sec);
-      var bar="🗝️"+(st.hints?"💡".repeat(st.hints):"")+"🔢🔓";
-      shareText="3分脱出・今日の部屋 "+dayLabel+"\n🔓 "+tm+"で脱出（ヒント"+st.hints+"回）\n"+bar+"\n"+URL_+"\n#3分脱出";
+      $("rtitle").textContent="🔓 脱出成功！ "+tm;
+      var pv=getBest();if(!pv||sec<Number(pv))setBest(sec);
+      shareText="3分脱出・今日の部屋 "+dayLabel+"\n🔓 ミルが"+tm+"で脱出！（ヒント"+hs+"回）\n"+URL_+"\n#3分脱出";
     }else{
-      el("rtitle").textContent="⏰ 時間切れ…";
-      shareText="3分脱出・今日の部屋 "+dayLabel+"\n⏰ 脱出ならず…\n🗝️🔒\nみんなは脱出できる？\n"+URL_+"\n#3分脱出";
+      $("rtitle").textContent="⏰ 時間切れ…";
+      shareText="3分脱出・今日の部屋 "+dayLabel+"\n⏰ ミルは脱出できなかった…\nみんなはどう？\n"+URL_+"\n#3分脱出";
     }
-    el("share").textContent=shareText;
+    $("share").textContent=shareText;
   }
-  el("go").onclick=start;
-  el("hint").onclick=hint;
-  el("again").onclick=start;
-  el("tweet").onclick=function(){window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText),"_blank")};
-  el("copy").onclick=function(){
-    var done=function(){el("copy").textContent="コピーしました"};
-    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(shareText).then(done,function(){});
-    else done();
-  };
-  var b=getBest();
-  if(b){var s=Number(b);el("best").textContent="今日のベスト："+Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+
+  /* ===== 入力 ===== */
+  var stick=$("stick"),knob=$("knob"),sid=null;
+  function sMove(e){
+    var r=stick.getBoundingClientRect(),cx0=r.left+r.width/2,cy0=r.top+r.height/2;
+    var dx=e.clientX-cx0,dy=e.clientY-cy0,m=Math.hypot(dx,dy),mx=r.width/2-8;
+    if(m>mx){dx=dx/m*mx;dy=dy/m*mx}
+    knob.style.left=(35+dx)+"px";knob.style.top=(35+dy)+"px";vec.x=dx/mx;vec.y=dy/mx;
+  }
+  stick.addEventListener("pointerdown",function(e){sid=e.pointerId;stick.setPointerCapture(sid);sMove(e);e.preventDefault()});
+  stick.addEventListener("pointermove",function(e){if(e.pointerId===sid)sMove(e)});
+  function sEnd(e){if(e.pointerId!==sid)return;sid=null;knob.style.left="35px";knob.style.top="35px";vec.x=vec.y=0}
+  stick.addEventListener("pointerup",sEnd);stick.addEventListener("pointercancel",sEnd);
+  $("act").addEventListener("pointerdown",function(e){e.preventDefault();doAct()});
+  $("hint").addEventListener("click",hint);
+  window.addEventListener("keydown",function(e){
+    var k=e.key.length===1?e.key.toLowerCase():e.key;
+    if(k===" "||k==="Enter"||k==="e"){if(st&&!panelOpen){doAct();e.preventDefault()}return}
+    keys[k]=true;if(k.indexOf("Arrow")===0)e.preventDefault();
+  });
+  window.addEventListener("keyup",function(e){var k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
+  $("go").onclick=start;$("again").onclick=start;
+  $("tweet").onclick=function(){window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText),"_blank")};
+  $("copy").onclick=function(){var d=function(){$("copy").textContent="コピーしました"};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(shareText).then(d,function(){});else d()};
+  var b=getBest();if(b){var s=Number(b);$("best").textContent="今日のベスト："+Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+  resize();raf=requestAnimationFrame(loop);
+  window.__esc={answer:answer,order:order,digit:digit,items:items,pl:pl,inspect:inspect,get near(){return near}};
 })();
 </script>
 </body>
