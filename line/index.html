@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ミルの一本線｜毎日重力が変わる、1本線で転がす無料ブラウザパズル</title>
+<meta name="description" content="1本の線を描いて、ミルをゴールまで転がそう。重力は毎日変わる。インクは限りあり。自分の線をURLで友達に送れる無料ブラウザパズル。">
+<meta property="og:title" content="ミルの一本線">
+<meta property="og:description" content="重力が毎日変わる。1本線でミルをゴールへ！自分の線をURLで送れる。">
+<style>
+  :root{--bg:#1f1a2e;--panel:#2c2540;--ink:#f6efe3;--sub:#b7aac9;--acc:#ffb84d;--ok:#4ecb8d;--ng:#ff6b6b}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+  html,body{height:100%;overflow:hidden}
+  body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.5}
+  .scr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:12px 12px 8px;overflow-y:auto}
+  .hide{display:none!important}
+  h1{font-size:1.25rem;text-align:center;margin-top:4px}
+  .card{background:var(--panel);border-radius:18px;padding:16px;margin-top:12px;width:100%;max-width:440px}
+  .btn{display:block;width:100%;border:0;border-radius:14px;padding:13px;font-size:1.02rem;font-weight:700;background:var(--acc);color:#2a1d00;cursor:pointer;margin-top:10px;font-family:inherit}
+  .btn:active{transform:translateY(2px)}
+  .btn.sub{background:#3e3558;color:var(--ink);font-weight:500;font-size:.92rem;padding:10px}
+  .pen{color:var(--sub);font-size:.8rem}
+  #game{padding:6px 0 0;justify-content:flex-start;overflow:hidden}
+  .hud{width:100%;max-width:440px;display:flex;align-items:center;gap:10px;padding:0 12px}
+  #gv{font-size:.82rem;font-weight:800;white-space:nowrap}
+  .inkbar{flex:1;height:14px;background:#3a3153;border-radius:8px;overflow:hidden;position:relative}
+  #inkfill{height:100%;width:100%;background:linear-gradient(90deg,#ff9a3c,#ffd23f);transition:width .05s}
+  #inktx{font-size:.78rem;min-width:44px;text-align:right}
+  .stage{position:relative;margin-top:6px}
+  canvas#cv{display:block;border-radius:12px;touch-action:none;background:#f7f1e1}
+  #toast{position:absolute;left:0;right:0;top:42%;text-align:center;font-size:1.5rem;font-weight:800;color:#fff;text-shadow:0 2px 8px #000,0 0 3px #000;pointer-events:none}
+  .row{display:flex;gap:10px;width:100%;max-width:440px;padding:0 12px;margin-top:8px}
+  .row .btn{margin-top:0;padding:11px;font-size:.92rem}
+  .share{white-space:pre-wrap;background:#241d38;border-radius:12px;padding:12px;margin-top:12px;font-size:.86rem;-webkit-user-select:text;user-select:text;word-break:break-all}
+  .small{font-size:.78rem;color:var(--sub);text-align:center;margin:14px 0 8px}
+  .small a{color:var(--acc)}
+  .res h2{font-size:1.5rem;text-align:center}
+  .gline{font-size:1.1rem;font-weight:800;text-align:center;margin-top:6px}
+  #rmsg{text-align:center;margin-top:6px;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div id="start" class="scr">
+  <h1>✏️ ミルの一本線</h1>
+  <p class="pen" id="date" style="text-align:center"></p>
+  <div class="card">
+    <canvas id="mil" width="120" height="90" style="width:120px;height:90px;display:block;margin:0 auto"></canvas>
+    <p style="text-align:center;margin-top:4px"><b>ミル</b>をゴールまで届けたい！</p>
+    <p style="margin-top:10px;color:var(--sub);font-size:.88rem">画面に<b>1本だけ</b>線を描こう。描き終わるとミルが転がり出す。<br>・<b>重力は毎日変わる</b>（今日は…↓）<br>・使える<b>インクには限り</b>がある<br>・⭐を集めると高評価<br>クリアしたら、<b>自分の線をURLで友達に送れる</b>。</p>
+    <p id="gtoday" class="gline"></p>
+    <p id="best" class="pen" style="text-align:center;margin-top:6px"></p>
+    <button class="btn" id="go">はじめる</button>
+  </div>
+  <p class="small"><a href="../">ゆううのゲームひろば</a> ／ 今日の部屋は毎日0時（日本時間）に変わります</p>
+</div>
+
+<div id="game" class="scr hide">
+  <div class="hud"><div id="gv"></div><div class="inkbar"><div id="inkfill"></div></div><div id="inktx"></div></div>
+  <div class="stage"><canvas id="cv"></canvas><div id="toast"></div></div>
+  <div class="row"><button class="btn sub" id="hint">💡ヒント</button><button class="btn sub" id="clear">かきなおし</button></div>
+</div>
+
+<div id="result" class="scr hide">
+  <div class="card res">
+    <h2 id="rtitle"></h2>
+    <p class="gline" id="rstars"></p>
+    <p id="rmsg"></p>
+    <div class="share" id="share"></div>
+    <button class="btn" id="tweet">自分の線をXでシェア</button>
+    <button class="btn sub" id="copy">コピーする</button>
+    <button class="btn sub" id="again">もう一度挑戦する</button>
+  </div>
+  <p class="small"><a href="../">ゆううのゲームひろば</a></p>
+</div>
+
+<script>
+var LW=320,LH=440,BR=10,GOALR=16;
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+var GRAV=[{n:"下",x:0,y:1},{n:"右",x:1,y:0},{n:"左",x:-1,y:0},{n:"右下",x:.6,y:.8},{n:"左下",x:-.6,y:.8},{n:"上(さかさま)",x:0,y:-1}];
+function rectHit(b,r,rad){ // 円と矩形の衝突。押し出して反射。戻り値 true=接触
+  var cx=Math.max(r.x,Math.min(b.x,r.x+r.w)),cy=Math.max(r.y,Math.min(b.y,r.y+r.h)),dx=b.x-cx,dy=b.y-cy,d2=dx*dx+dy*dy;
+  if(d2>=rad*rad)return false;
+  var nx,ny,d=Math.sqrt(d2);
+  if(d>1e-6){nx=dx/d;ny=dy/d;b.x=cx+nx*rad;b.y=cy+ny*rad}
+  else{var l=b.x-r.x,rr=r.x+r.w-b.x,t=b.y-r.y,bt=r.y+r.h-b.y,m=Math.min(l,rr,t,bt);
+    if(m===l){nx=-1;ny=0;b.x=r.x-rad}else if(m===rr){nx=1;ny=0;b.x=r.x+r.w+rad}else if(m===t){nx=0;ny=-1;b.y=r.y-rad}else{nx=0;ny=1;b.y=r.y+r.h+rad}}
+  var vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=1.2*vn*nx;b.vy-=1.2*vn*ny}
+  return true;
+}
+function segHit(b,a,c,rad){
+  var abx=c.x-a.x,aby=c.y-a.y,l2=abx*abx+aby*aby,t=l2?((b.x-a.x)*abx+(b.y-a.y)*aby)/l2:0;t=Math.max(0,Math.min(1,t));
+  var px=a.x+abx*t,py=a.y+aby*t,dx=b.x-px,dy=b.y-py,d2=dx*dx+dy*dy;if(d2>=rad*rad)return;
+  var d=Math.sqrt(d2),nx,ny;if(d>1e-6){nx=dx/d;ny=dy/d}else{var L=Math.sqrt(l2)||1;nx=-aby/L;ny=abx/L}
+  b.x=px+nx*rad;b.y=py+ny*rad;
+  var vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=1.2*vn*nx;b.vy-=1.2*vn*ny}
+  var tx=-ny,ty=nx,vt=b.vx*tx+b.vy*ty;b.vx-=vt*.015*0;
+}
+// シミュレーション：1フレーム(1/60秒)。戻り値 null=継続, "goal" / "hazard" / "stop" / "time"
+function newSim(lv,line){return {b:{x:lv.start.x,y:lv.start.y,vx:0,vy:0},line:line||[],t:0,slow:0,stars:[false,false,false],res:null,trail:[]}}
+function stepSim(lv,s){
+  var g=lv.g,G=620,sub=6,dt=1/60/sub,b=s.b;
+  for(var k=0;k<sub;k++){
+    b.vx+=g.x*G*dt;b.vy+=g.y*G*dt;
+    var sp=Math.hypot(b.vx,b.vy);if(sp>520){b.vx*=520/sp;b.vy*=520/sp}
+    b.vx*=1-.25*dt;b.vy*=1-.25*dt;
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+    for(var i=0;i<s.line.length-1;i++)segHit(b,s.line[i],s.line[i+1],BR+2.5);
+    for(var j=0;j<lv.walls.length;j++)rectHit(b,lv.walls[j],BR);
+    if(b.x<BR){b.x=BR;if(b.vx<0)b.vx*=-.2}if(b.x>LW-BR){b.x=LW-BR;if(b.vx>0)b.vx*=-.2}
+    if(b.y<BR){b.y=BR;if(b.vy<0)b.vy*=-.2}if(b.y>LH-BR){b.y=LH-BR;if(b.vy>0)b.vy*=-.2}
+  }
+  s.t+=1/60;
+  for(var h=0;h<lv.hz.length;h++){var r=lv.hz[h];var cx=Math.max(r.x,Math.min(b.x,r.x+r.w)),cy=Math.max(r.y,Math.min(b.y,r.y+r.h));if((b.x-cx)*(b.x-cx)+(b.y-cy)*(b.y-cy)<(BR-2)*(BR-2))return s.res="hazard"}
+  for(var q=0;q<3;q++){var st=lv.stars[q];if(!s.stars[q]&&Math.hypot(b.x-st.x,b.y-st.y)<BR+8)s.stars[q]=true}
+  if(Math.hypot(b.x-lv.goal.x,b.y-lv.goal.y)<GOALR+3)return s.res="goal";
+  if(Math.hypot(b.vx,b.vy)<9)s.slow+=1/60;else s.slow=0;
+  if(s.slow>1.3)return s.res="stop";
+  if(s.t>14)return s.res="time";
+  if((s.trail.length|0)<9999&&((s.t*60)|0)%3===0)s.trail.push([b.x,b.y]);
+  return null;
+}
+function runSim(lv,line,keepTrail){var s=newSim(lv,line),r;for(var i=0;i<900&&!(r=stepSim(lv,s));i++);s.res=s.res||"time";return s}
+function plen(p){var L=0;for(var i=1;i<p.length;i++)L+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y);return L}
+function resample(p,step,noise,r){var o=[{x:p[0].x,y:p[0].y}];for(var i=1;i<p.length;i++){var a=p[i-1],c=p[i],n=Math.max(1,Math.ceil(Math.hypot(c.x-a.x,c.y-a.y)/step));for(var k=1;k<=n;k++)o.push({x:a.x+(c.x-a.x)*k/n+(r?(r()-.5)*2*noise:0),y:a.y+(c.y-a.y)*k/n+(r?(r()-.5)*2*noise:0)})}return o}
+function robust(lv,pts,seed){var r=rng(seed*13+1);for(var i=0;i<5;i++){var q=resample(pts,4+i,i?1.5:0,i?r:null);if(runSim(lv,q).res!=="goal")return false}return true}
+function gen(seed){
+  for(var at=0;at<400;at++){
+    var r=rng(seed*7919+at*104729+11),R=function(a,b){return a+r()*(b-a)},ri=function(a,b){return a+Math.floor(r()*(b-a+1))};
+    var g=GRAV[seed%6===0&&at<1?5:ri(0,5)];
+    // 上流側にスタート、下流側にゴール
+    var along=function(p){return p.x*g.x+p.y*g.y};
+    var start,goal,tries=0;
+    do{start={x:R(40,LW-40),y:R(40,LH-40)};goal={x:R(30,LW-30),y:R(30,LH-30)};tries++}
+    while((along(goal)-along(start)<80||Math.hypot(goal.x-start.x,goal.y-start.y)<190)&&tries<200);
+    var walls=[],n=ri(4,7);
+    for(var i=0;i<n;i++){var hor=r()<.55,w=hor?R(50,120):R(12,16),h=hor?R(12,16):R(50,120),x=R(8,LW-8-w),y=R(8,LH-8-h);
+      var bad=false;[start,goal].forEach(function(p){if(p.x>x-30&&p.x<x+w+30&&p.y>y-30&&p.y<y+h+30)bad=true});
+      if(!bad)walls.push({x:x,y:y,w:w,h:h})}
+    var hz=[],hn=ri(1,2);
+    for(var k=0;k<hn;k++){var hw=R(40,70),hh=14,hx=R(8,LW-8-hw),hy=R(8,LH-8-hh),bad2=false;
+      [start,goal].forEach(function(p){if(p.x>hx-40&&p.x<hx+hw+40&&p.y>hy-40&&p.y<hy+hh+40)bad2=true});
+      walls.forEach(function(wl){if(hx<wl.x+wl.w+4&&hx+hw>wl.x-4&&hy<wl.y+wl.h+4&&hy+hh>wl.y-4)bad2=true});
+      if(!bad2)hz.push({x:hx,y:hy,w:hw,h:hh})}
+    var lv={g:g,start:start,goal:goal,walls:walls,hz:hz,stars:[{x:0,y:0},{x:0,y:0},{x:0,y:0}]};
+    if(runSim(lv,[]).res==="goal")continue;
+    // 解答探索：ランダムな折れ線
+    var sols=[];
+    for(var c=0;c<2200&&sols.length<2;c++){
+      var np=ri(2,5),pts=[];
+      var sx=start.x+R(-50,50)-g.x*20,sy=start.y+R(-50,50)-g.y*20;pts.push({x:sx,y:sy});
+      for(var m=1;m<np;m++){var last=pts[m-1],a=R(0,6.283),d=R(40,130);pts.push({x:Math.max(6,Math.min(LW-6,last.x+Math.cos(a)*d)),y:Math.max(6,Math.min(LH-6,last.y+Math.sin(a)*d))})}
+      if(plen(pts)>340)continue;
+      var sim=runSim(lv,pts,true);
+      if(sim.res==="goal"&&robust(lv,pts,seed+c))sols.push({pts:pts,sim:sim});
+    }
+    if(!sols.length)continue;
+    var best=sols[0];if(plen(best.pts)<110)continue;
+    // ★は2本目の解（なければ1本目）の軌跡上
+    var tr=(sols[1]||sols[0]).sim;var tj=[];var s2=newSim(lv,(sols[1]||sols[0]).pts);while(!stepSim(lv,s2)){if(((s2.t*60)|0)%6===0)tj.push({x:s2.b.x,y:s2.b.y})}
+    if(tj.length<8)continue;
+    lv.stars=[tj[Math.floor(tj.length*.25)],tj[Math.floor(tj.length*.5)],tj[Math.floor(tj.length*.75)]].map(function(p){return{x:p.x,y:p.y}});
+    lv.par=best.pts;lv.parLen=plen(best.pts);lv.ink=Math.max(200,Math.round(lv.parLen*1.4/10)*10);
+    return lv;
+  }
+  return null;
+}
+if(typeof module!=="undefined")module.exports={gen:gen,runSim:runSim,newSim:newSim,stepSim:stepSim,plen:plen,GRAV:GRAV};
+
+</script>
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var JST=new Date(Date.now()+9*3600*1000);
+var dayKey=JST.getUTCFullYear()*10000+(JST.getUTCMonth()+1)*100+JST.getUTCDate();
+var dayLabel=(JST.getUTCMonth()+1)+"/"+JST.getUTCDate();
+$("date").textContent=JST.getUTCFullYear()+"年"+dayLabel+"の部屋";
+var BASE=location.protocol==="file:"?"https://yuchin0809.github.io/games/line/":(location.origin+location.pathname);
+var q=function(k){var m=location.search.match(new RegExp("[?&]"+k+"=([^&]+)"));return m?m[1]:null};
+var lvKey=dayKey,friendLine=null;
+var qd=q("d"),qsol=q("s");
+if(qd&&/^\d{8}$/.test(qd)&&qsol){lvKey=Number(qd);friendLine=decodeLine(qsol)}
+var lv=null,cv=$("cv"),dpr=Math.min(window.devicePixelRatio||1,2);
+
+function encodeLine(p){
+  var step=Math.max(1,Math.ceil(p.length/42)),o=[];for(var i=0;i<p.length;i+=step)o.push(p[i]);
+  if(o[o.length-1]!==p[p.length-1])o.push(p[p.length-1]);
+  return o.map(function(pt){var v=Math.max(0,Math.min(LW,Math.round(pt.x)))*512+Math.max(0,Math.min(LH,Math.round(pt.y)));var s=v.toString(36);return("0000"+s).slice(-4)}).join("");
+}
+function decodeLine(s){
+  if(!/^[0-9a-z]+$/.test(s)||s.length%4||s.length>4*60)return null;var o=[];
+  for(var i=0;i<s.length;i+=4){var v=parseInt(s.substr(i,4),36),x=Math.floor(v/512),y=v%512;if(x>LW||y>LH)return null;o.push({x:x,y:y})}
+  return o.length>=2?o:null;
+}
+
+/* ===== 状態 ===== */
+var mode="idle",sim=null,line=[],drawing=false,attempts=0,usedHint=false,showHint=false,raf=0,last=0,acc=0,finished=false,frTimer=0;
+function inkUsed(){return plen(line)}
+function setInk(){var u=inkUsed(),f=Math.max(0,1-u/lv.ink);$("inkfill").style.width=(f*100)+"%";$("inktx").textContent=Math.round(f*100)+"%"}
+
+/* ===== 描画 ===== */
+function drawMil(c,x,y,s,vx,vy){
+  c.save();c.translate(x,y);c.scale(s,s);
+  c.fillStyle="rgba(0,0,0,.18)";c.beginPath();c.ellipse(1,2,12,12,0,0,7);c.fill();
+  c.fillStyle="#7fe3c4";c.beginPath();c.arc(0,0,11,0,7);c.fill();
+  c.fillStyle="#b5f3dd";c.beginPath();c.ellipse(0,4,7,5,0,0,7);c.fill();
+  c.strokeStyle="#3aa88a";c.lineWidth=2;c.beginPath();c.moveTo(0,-10);c.quadraticCurveTo(0,-15,4,-16);c.stroke();
+  c.fillStyle="#5fd35a";c.beginPath();c.ellipse(6,-16,4.5,2.4,-.5,0,7);c.fill();
+  var m=Math.hypot(vx,vy)||1,ox=vx/m*2.2*Math.min(1,m/120),oy=vy/m*2*Math.min(1,m/120);
+  c.fillStyle="#fff";c.beginPath();c.arc(-4+ox,-2+oy,3.5,0,7);c.arc(4+ox,-2+oy,3.5,0,7);c.fill();
+  c.fillStyle="#222";c.beginPath();c.arc(-4+ox*1.6,-2+oy*1.6,1.7,0,7);c.arc(4+ox*1.6,-2+oy*1.6,1.7,0,7);c.fill();
+  c.fillStyle="#ff9aa8";c.beginPath();c.arc(-7.5,2.4,1.7,0,7);c.arc(7.5,2.4,1.7,0,7);c.fill();
+  c.restore();
+}
+function star(c,x,y,r,on){
+  c.save();c.translate(x,y);c.beginPath();for(var i=0;i<10;i++){var a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}c.closePath();
+  c.fillStyle=on?"#ffd23f":"#fff3b0";c.globalAlpha=on?.35:1;c.fill();c.globalAlpha=1;c.strokeStyle="#c79a00";c.lineWidth=1.5;c.stroke();c.restore();
+}
+function poly(c,p,col,w,dash){
+  if(p.length<2)return;c.strokeStyle=col;c.lineWidth=w;c.lineCap="round";c.lineJoin="round";c.setLineDash(dash||[]);
+  c.beginPath();c.moveTo(p[0].x,p[0].y);for(var i=1;i<p.length;i++)c.lineTo(p[i].x,p[i].y);c.stroke();c.setLineDash([]);
+}
+function render(){
+  if(!lv)return;var c=cv.getContext("2d"),sc=cv.width/LW;c.setTransform(sc,0,0,sc,0,0);
+  c.fillStyle="#f7f1e1";c.fillRect(0,0,LW,LH);
+  c.strokeStyle="rgba(90,140,200,.22)";c.lineWidth=1;for(var x=0;x<LW;x+=20){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,LH);c.stroke()}for(var y=0;y<LH;y+=20){c.beginPath();c.moveTo(0,y+.5);c.lineTo(LW,y+.5);c.stroke()}
+  c.strokeStyle="rgba(220,90,90,.35)";c.beginPath();c.moveTo(24.5,0);c.lineTo(24.5,LH);c.stroke();
+  // 壁
+  lv.walls.forEach(function(r){c.fillStyle="#2b2d42";c.fillRect(r.x,r.y,r.w,r.h);c.strokeStyle="rgba(255,255,255,.18)";c.lineWidth=1;c.save();c.beginPath();c.rect(r.x,r.y,r.w,r.h);c.clip();for(var k=-r.h;k<r.w+r.h;k+=7){c.beginPath();c.moveTo(r.x+k,r.y+r.h);c.lineTo(r.x+k+r.h,r.y);c.stroke()}c.restore()});
+  // 危険
+  lv.hz.forEach(function(r){c.fillStyle="#e63946";c.fillRect(r.x,r.y,r.w,r.h);c.fillStyle="#fff";for(var k=r.x+3;k<r.x+r.w-6;k+=12){c.beginPath();c.moveTo(k,r.y+r.h-2);c.lineTo(k+4,r.y+3);c.lineTo(k+8,r.y+r.h-2);c.closePath();c.fill()}});
+  // ★
+  lv.stars.forEach(function(s,i){star(c,s.x,s.y,9,sim&&sim.stars[i])});
+  // ゴール
+  c.fillStyle="rgba(78,203,141,.25)";c.beginPath();c.arc(lv.goal.x,lv.goal.y,GOALR+4,0,7);c.fill();
+  c.strokeStyle="#2e9d6b";c.lineWidth=3;c.setLineDash([5,4]);c.beginPath();c.arc(lv.goal.x,lv.goal.y,GOALR,0,7);c.stroke();c.setLineDash([]);
+  c.fillStyle="#2e9d6b";c.fillRect(lv.goal.x-1.5,lv.goal.y-13,3,24);c.beginPath();c.moveTo(lv.goal.x+1.5,lv.goal.y-13);c.lineTo(lv.goal.x+14,lv.goal.y-8);c.lineTo(lv.goal.x+1.5,lv.goal.y-3);c.fill();
+  // ヒント
+  if(showHint)poly(c,lv.par,"rgba(80,120,255,.45)",5,[8,7]);
+  // 線
+  var L=sim?sim.line:line;if(L.length>=2){poly(c,L,"rgba(120,70,0,.35)",8);poly(c,L,"#ff8a1f",5)}
+  // 軌跡
+  if(sim&&sim.trail.length>1){c.fillStyle="rgba(127,227,196,.5)";sim.trail.forEach(function(t,i){c.beginPath();c.arc(t[0],t[1],2+i/sim.trail.length*2,0,7);c.fill()})}
+  // ミル
+  var b=sim?sim.b:lv.start;drawMil(c,b.x,b.y,.95,sim?b.vx:lv.g.x*100,sim?b.vy:lv.g.y*100);
+  // 重力矢印
+  c.save();c.translate(LW-34,30);c.fillStyle="rgba(43,45,66,.85)";c.beginPath();c.arc(0,0,22,0,7);c.fill();
+  c.strokeStyle="#ffd23f";c.fillStyle="#ffd23f";c.lineWidth=3;c.lineCap="round";var ax=lv.g.x*13,ay=lv.g.y*13;
+  c.beginPath();c.moveTo(-ax,-ay);c.lineTo(ax,ay);c.stroke();var ang=Math.atan2(ay,ax);c.beginPath();c.moveTo(ax+Math.cos(ang)*6,ay+Math.sin(ang)*6);c.lineTo(ax+Math.cos(ang+2.5)*7,ay+Math.sin(ang+2.5)*7);c.lineTo(ax+Math.cos(ang-2.5)*7,ay+Math.sin(ang-2.5)*7);c.closePath();c.fill();c.restore();
+}
+function resize(){var avail=window.innerHeight-150,h=Math.min(avail,window.innerWidth*LH/LW-6,640);h=Math.max(h,260);var w=h*LW/LH;cv.style.width=w+"px";cv.style.height=h+"px";cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);render()}
+window.addEventListener("resize",resize);
+
+/* ===== ループ ===== */
+function toast(t,ms){var e=$("toast");e.textContent=t;if(ms)setTimeout(function(){if(e.textContent===t)e.textContent=""},ms)}
+function loop(t){
+  var dt=Math.min(.1,(t-last)/1000||0);last=t;
+  if(mode==="run"&&sim){acc+=dt;while(acc>=1/60&&mode==="run"){acc-=1/60;var r=stepSim(lv,sim);if(r){onEnd(r);break}}}
+  render();raf=requestAnimationFrame(loop);
+}
+function onEnd(r){
+  mode="done";
+  if(r==="goal"){var f=function(){finish()};setTimeout(f,650);toast("ゴール！")}
+  else if(friendMode){toast("この線では解けなかった…");setTimeout(function(){mode="idle";show("start")},1600)}
+  else{toast(r==="hazard"?"あぶない！":r==="stop"?"とまっちゃった…":"じかんぎれ…");attempts++;
+    clearTimeout(frTimer);frTimer=setTimeout(function(){if(mode==="done"&&!finished)resetDraw()},1100)}
+}
+function resetDraw(){sim=null;line=[];mode="draw";setInk();toast("")}
+function startRun(){sim=newSim(lv,line.slice());mode="run";acc=0;toast("")}
+
+/* ===== 入力 ===== */
+function pos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*LW,y:(e.clientY-r.top)/r.height*LH}}
+cv.addEventListener("pointerdown",function(e){
+  if(mode!=="draw"||line.length)return;drawing=true;cv.setPointerCapture(e.pointerId);line=[pos(e)];setInk();e.preventDefault();
+});
+cv.addEventListener("pointermove",function(e){
+  if(!drawing)return;var p=pos(e),l=line[line.length-1];if(Math.hypot(p.x-l.x,p.y-l.y)<4)return;
+  var add=Math.hypot(p.x-l.x,p.y-l.y),rest=lv.ink-inkUsed();
+  if(add>rest){if(rest<=1){return}p={x:l.x+(p.x-l.x)*rest/add,y:l.y+(p.y-l.y)*rest/add}}
+  line.push(p);setInk();
+});
+function up(){if(!drawing)return;drawing=false;if(line.length>=2&&inkUsed()>=15){attempts+=0;startRun()}else{line=[];setInk()}}
+cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+$("clear").onclick=function(){if(mode==="run"||mode==="done"&&finished)return;clearTimeout(frTimer);resetDraw()};
+$("hint").onclick=function(){showHint=!showHint;if(showHint)usedHint=true};
+
+/* ===== 画面遷移 ===== */
+function show(id){["start","game","result"].forEach(function(k){$(k).classList.toggle("hide",k!==id)});if(id==="game")resize()}
+function gtext(){return "今日の重力："+lv.g.n}
+function startGame(){
+  finished=false;attempts=0;usedHint=false;showHint=false;clearTimeout(frTimer);show("game");
+  $("gv").textContent="重力："+lv.g.n;resetDraw();
+}
+var shareText="",lastLine=null;
+function finish(){
+  finished=true;mode="done";var st=sim.stars.filter(Boolean).length,used=Math.round(plen(sim.line)),pct=Math.round(used/lv.ink*100);
+  lastLine=sim.line.slice();
+  show("result");
+  $("rtitle").textContent=friendMode?"👀 友達の線":"🎉 クリア！";
+  $("rstars").textContent=["☆☆☆","⭐☆☆","⭐⭐☆","⭐⭐⭐"][st]+"　インク "+pct+"%";
+  $("rmsg").textContent=(friendMode?"":"（"+(attempts+1)+"回目でクリア"+(usedHint?"・ヒントあり":"")+"）");
+  var url=BASE+"?d="+lvKey+"&s="+encodeLine(lastLine);
+  shareText="ミルの一本線 "+dayLabel+"（重力：「"+lv.g.n+"」）\n"+["☆☆☆","⭐☆☆","⭐⭐☆","⭐⭐⭐"][st]+" インク"+pct+"%"+(usedHint?" 💡":"")+"\nこの線で解けた→\n"+url+"\n#ミルの一本線";
+  $("share").textContent=shareText;
+  if(!friendMode){try{var k="line_best_"+lvKey,o=localStorage.getItem(k);var sc=st*1000-pct;if(o===null||sc>Number(o))localStorage.setItem(k,sc)}catch(e){}}
+}
+var friendMode=false;
+function playFriend(){
+  friendMode=true;finished=false;show("game");$("gv").textContent="友達の線";line=friendLine.slice();$("inkfill").style.width="50%";$("inktx").textContent="";
+  sim=newSim(lv,line);mode="run";acc=0;toast("友達の線を再生中…");
+}
+$("go").onclick=function(){friendMode=false;startGame()};
+$("again").onclick=function(){friendMode=false;lvKey=dayKey;if(!lv||lv._k!==dayKey){lv=mk(dayKey)}startGame()};
+$("tweet").onclick=function(){window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(shareText),"_blank")};
+$("copy").onclick=function(){var d=function(){$("copy").textContent="コピーしました"};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(shareText).then(d,function(){});else d()};
+function mk(k){var l=gen(k)||gen(k+1);l._k=k;return l}
+
+/* ===== 起動 ===== */
+(function(){var c=$("mil").getContext("2d");drawMil(c,60,45,2.2,60,0)})();
+$("go").disabled=true;$("go").textContent="部屋を作っています…";
+setTimeout(function(){
+  lv=mk(lvKey);$("gtoday").textContent="重力："+lv.g.n+"（ミルは"+({"下":"下","右":"右","左":"左","右下":"右下","左下":"左下","上(さかさま)":"上"})[lv.g.n]+"へ落ちる）";
+  $("go").disabled=false;
+  if(friendLine){$("go").textContent="友達の線を見る";$("go").onclick=function(){playFriend()};
+    var n=document.createElement("button");n.className="btn sub";n.textContent="自分で挑戦する";n.onclick=function(){friendMode=false;friendLine=null;lvKey=dayKey;lv=mk(dayKey);$("go").textContent="はじめる";$("go").onclick=function(){friendMode=false;startGame()};n.remove();$("gtoday").textContent="重力："+lv.g.n;startGame()};$("go").parentNode.appendChild(n)}
+  else $("go").textContent="はじめる";
+  try{var o=localStorage.getItem("line_best_"+lvKey);if(o!==null){var v=Number(o),s=Math.round(v/1000)>0?Math.ceil(v/1000):0;$("best").textContent="今日のベスト：⭐"+Math.max(0,Math.min(3,Math.ceil(v/1000)))}}catch(e){}
+  resize();
+},30);
+raf=requestAnimationFrame(loop);
+window.__l={get lv(){return lv},get mode(){return mode},get sim(){return sim},get attempts(){return attempts}};
+})();
+</script>
+</body>
+</html>
